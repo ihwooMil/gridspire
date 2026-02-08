@@ -243,7 +243,7 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 
 
 ## Alias matching the task spec naming convention.
-func get_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+func get_grid_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	return find_path(from, to)
 
 
