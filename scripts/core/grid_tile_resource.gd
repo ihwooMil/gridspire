@@ -10,7 +10,7 @@ var occupant: CharacterData = null
 
 
 func is_walkable() -> bool:
-	return tile_type == Enums.TileType.FLOOR or tile_type == Enums.TileType.ELEVATED
+	return tile_type == Enums.TileType.FLOOR or tile_type == Enums.TileType.ELEVATED or tile_type == Enums.TileType.HAZARD
 
 
 func is_occupied() -> bool:

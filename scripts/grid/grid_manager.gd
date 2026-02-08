@@ -6,6 +6,8 @@ extends Node
 signal grid_initialized(width: int, height: int)
 signal character_moved(character: CharacterData, from: Vector2i, to: Vector2i)
 signal tile_changed(position: Vector2i, tile: GridTile)
+signal movement_started(character: CharacterData, path: Array[Vector2i])
+signal movement_finished(character: CharacterData)
 
 ## The 2D grid stored as a flat dictionary keyed by Vector2i.
 var grid: Dictionary = {}  # Vector2i -> GridTile
@@ -14,6 +16,14 @@ var grid_height: int = 0
 
 ## Pixel size of each tile for rendering (set by the battle scene).
 var tile_size: Vector2 = Vector2(64, 64)
+
+## Range pattern types for targeting.
+enum RangePattern {
+	DIAMOND,  ## Standard Manhattan distance (default)
+	LINE,     ## Straight line in 4 cardinal directions
+	CROSS,    ## + shaped pattern
+	AREA,     ## All tiles in a square area
+}
 
 
 ## Create a rectangular grid of floor tiles.
@@ -34,6 +44,11 @@ func initialize_grid(width: int, height: int) -> void:
 ## Get tile at position, or null if out of bounds.
 func get_tile(pos: Vector2i) -> GridTile:
 	return grid.get(pos, null)
+
+
+## Alias matching the task spec naming convention.
+func get_tile_at(pos: Vector2i) -> GridTile:
+	return get_tile(pos)
 
 
 ## Set tile type at a position.
@@ -59,6 +74,7 @@ func place_character(character: CharacterData, pos: Vector2i) -> bool:
 
 
 ## Move a character to a new position if the path is valid.
+## Returns the path taken, or empty array if invalid.
 func move_character(character: CharacterData, target: Vector2i) -> bool:
 	var path: Array[Vector2i] = find_path(character.grid_position, target)
 	if path.is_empty():
@@ -75,6 +91,8 @@ func move_character(character: CharacterData, target: Vector2i) -> bool:
 	if new_tile:
 		new_tile.occupant = character
 	character.grid_position = target
+
+	movement_started.emit(character, path)
 	character_moved.emit(character, old_pos, target)
 	return true
 
@@ -84,7 +102,7 @@ func get_reachable_tiles(character: CharacterData) -> Array[Vector2i]:
 	return get_tiles_in_range_walkable(character.grid_position, character.move_range)
 
 
-## Get tiles within a walking distance (respecting walls/obstacles).
+## Get tiles within a walking distance (respecting walls/obstacles via BFS).
 func get_tiles_in_range_walkable(origin: Vector2i, max_range: int) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var visited: Dictionary = {}
@@ -125,9 +143,68 @@ func get_tiles_in_range(origin: Vector2i, min_range: int, max_range: int) -> Arr
 	return result
 
 
+## Get tiles matching a specific range pattern.
+func get_tiles_in_range_pattern(origin: Vector2i, max_range: int, pattern: RangePattern) -> Array[Vector2i]:
+	match pattern:
+		RangePattern.DIAMOND:
+			return get_tiles_in_range(origin, 1, max_range)
+		RangePattern.LINE:
+			return _get_line_tiles(origin, max_range)
+		RangePattern.CROSS:
+			return _get_cross_tiles(origin, max_range)
+		RangePattern.AREA:
+			return _get_area_tiles(origin, max_range)
+	return []
+
+
+## Get tiles in all 4 cardinal lines from origin.
+func _get_line_tiles(origin: Vector2i, max_range: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	for dir: Vector2i in directions:
+		for i: int in range(1, max_range + 1):
+			var pos: Vector2i = origin + dir * i
+			if not grid.has(pos):
+				break
+			result.append(pos)
+			# Stop if wall blocks line of sight
+			var tile: GridTile = get_tile(pos)
+			if tile and tile.tile_type == Enums.TileType.WALL:
+				break
+	return result
+
+
+## Get tiles in a cross pattern (all 4 directions simultaneously).
+func _get_cross_tiles(origin: Vector2i, max_range: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var directions: Array[Vector2i] = [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]
+	for dir: Vector2i in directions:
+		for i: int in range(1, max_range + 1):
+			var pos: Vector2i = origin + dir * i
+			if grid.has(pos):
+				result.append(pos)
+	return result
+
+
+## Get tiles in a square area around origin.
+func _get_area_tiles(origin: Vector2i, max_range: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for x: int in range(-max_range, max_range + 1):
+		for y: int in range(-max_range, max_range + 1):
+			var pos := origin + Vector2i(x, y)
+			if pos != origin and grid.has(pos):
+				result.append(pos)
+	return result
+
+
 ## Manhattan distance between two grid positions.
 func manhattan_distance(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
+
+
+## Alias matching the task spec naming convention.
+func get_distance(a: Vector2i, b: Vector2i) -> int:
+	return manhattan_distance(a, b)
 
 
 ## Simple BFS pathfinding on the grid.
@@ -165,6 +242,11 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	return []  # No path found
 
 
+## Alias matching the task spec naming convention.
+func get_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return find_path(from, to)
+
+
 func _reconstruct_path(came_from: Dictionary, from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var path: Array[Vector2i] = []
 	var current: Vector2i = to
@@ -182,6 +264,14 @@ func get_orthogonal_neighbors(pos: Vector2i) -> Array[Vector2i]:
 		pos + Vector2i.LEFT,
 		pos + Vector2i.RIGHT,
 	]
+
+
+## Check if a tile is walkable at the given position.
+func is_tile_walkable(pos: Vector2i) -> bool:
+	var tile: GridTile = get_tile(pos)
+	if tile == null:
+		return false
+	return tile.is_walkable()
 
 
 ## Push a character away from the source.
@@ -254,3 +344,23 @@ func world_to_grid(world_pos: Vector2) -> Vector2i:
 ## Check if a position is within grid bounds.
 func is_in_bounds(pos: Vector2i) -> bool:
 	return pos.x >= 0 and pos.x < grid_width and pos.y >= 0 and pos.y < grid_height
+
+
+## Check basic line of sight between two positions.
+## Returns true if no WALL tiles block the cardinal/straight path.
+func has_line_of_sight(from: Vector2i, to: Vector2i) -> bool:
+	# Use Bresenham-like stepping along the dominant axis
+	var diff: Vector2i = to - from
+	var steps: int = maxi(absi(diff.x), absi(diff.y))
+	if steps == 0:
+		return true
+	for i: int in range(1, steps):
+		var t: float = float(i) / float(steps)
+		var check_pos := Vector2i(
+			roundi(from.x + diff.x * t),
+			roundi(from.y + diff.y * t),
+		)
+		var tile: GridTile = get_tile(check_pos)
+		if tile and tile.tile_type == Enums.TileType.WALL:
+			return false
+	return true

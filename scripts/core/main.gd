@@ -13,6 +13,7 @@ func _ready() -> void:
 	BattleManager.turn_started.connect(_on_turn_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
 	BattleManager.timeline_updated.connect(_on_timeline_updated)
+	BattleManager.character_died.connect(_on_character_died)
 
 	# For now, start a test battle
 	_start_test_battle()
@@ -58,9 +59,22 @@ func _start_test_battle() -> void:
 
 	# Initialize grid
 	GridManager.initialize_grid(10, 8)
+
+	# Add some obstacle tiles for visual variety
+	GridManager.set_tile_type(Vector2i(4, 2), Enums.TileType.WALL)
+	GridManager.set_tile_type(Vector2i(4, 3), Enums.TileType.WALL)
+	GridManager.set_tile_type(Vector2i(5, 5), Enums.TileType.WALL)
+	GridManager.set_tile_type(Vector2i(6, 1), Enums.TileType.HAZARD)
+	GridManager.set_tile_type(Vector2i(7, 6), Enums.TileType.ELEVATED)
+
 	GridManager.place_character(warrior, Vector2i(1, 3))
 	GridManager.place_character(mage, Vector2i(1, 5))
 	GridManager.place_character(enemy_a, Vector2i(8, 4))
+
+	# Create character sprites on the grid visual
+	grid_container.ensure_character_sprite(warrior)
+	grid_container.ensure_character_sprite(mage)
+	grid_container.ensure_character_sprite(enemy_a)
 
 	# Initialize decks
 	var players: Array[CharacterData] = [warrior, mage]
@@ -112,3 +126,12 @@ func _on_timeline_updated() -> void:
 		var marker: String = " >> " if i == 0 else "    "
 		lines.append("%s%s (SPD:%d)" % [marker, ch.character_name, ch.get_effective_speed()])
 	timeline_label.text = "\n".join(lines)
+
+
+func _on_character_died(character: CharacterData) -> void:
+	# Remove sprite from grid when character dies
+	grid_container.remove_character_sprite(character)
+	# Clear occupant from tile
+	var tile: GridTile = GridManager.get_tile(character.grid_position)
+	if tile and tile.occupant == character:
+		tile.occupant = null

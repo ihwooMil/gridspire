@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/character_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "rogue"
+character_name = "Rogue"
+faction = 0
+max_hp = 45
+current_hp = 45
+speed = 70
+energy_per_turn = 3
+move_range = 4
+grid_position = Vector2i(0, 0)
+starting_deck = []
+rarity = 0

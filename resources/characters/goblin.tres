@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/character_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "goblin"
+character_name = "Goblin"
+faction = 1
+max_hp = 30
+current_hp = 30
+speed = 90
+energy_per_turn = 2
+move_range = 2
+grid_position = Vector2i(0, 0)
+starting_deck = []
+rarity = 0
