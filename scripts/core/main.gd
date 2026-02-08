@@ -50,12 +50,32 @@ func _start_test_battle() -> void:
 	enemy_a.move_range = 2
 	enemy_a.faction = Enums.Faction.ENEMY
 
-	# Create cards for characters
-	_add_basic_cards(warrior, "Strike", Enums.CardEffectType.DAMAGE, 6, 1)
-	_add_basic_cards(warrior, "Defend", Enums.CardEffectType.SHIELD, 5, 1)
-	_add_basic_cards(mage, "Fireball", Enums.CardEffectType.DAMAGE, 8, 1)
-	_add_basic_cards(mage, "Heal", Enums.CardEffectType.HEAL, 6, 1)
-	_add_basic_cards(enemy_a, "Slash", Enums.CardEffectType.DAMAGE, 5, 1)
+	# Load card decks from .tres resources
+	_load_deck(warrior, "res://resources/cards/warrior/", [
+		"warrior_strike", "warrior_strike",
+		"warrior_defend", "warrior_defend",
+		"warrior_cleave",
+		"warrior_heavy_blow",
+		"warrior_shield_bash",
+		"warrior_battle_cry",
+		"warrior_iron_will",
+		"warrior_pommel_strike",
+	])
+	_load_deck(mage, "res://resources/cards/mage/", [
+		"mage_arcane_bolt", "mage_arcane_bolt",
+		"mage_mana_shield", "mage_mana_shield",
+		"mage_fireball",
+		"mage_frost_bolt",
+		"mage_healing_light",
+		"mage_arcane_intellect",
+		"mage_spark",
+		"mage_chain_lightning",
+	])
+	_load_deck(enemy_a, "res://resources/cards/warrior/", [
+		"warrior_strike", "warrior_strike", "warrior_strike",
+		"warrior_cleave",
+		"warrior_heavy_blow",
+	])
 
 	# Initialize grid
 	GridManager.initialize_grid(10, 8)
@@ -82,20 +102,17 @@ func _start_test_battle() -> void:
 	BattleManager.start_battle(players, enemies)
 
 
-func _add_basic_cards(character: CharacterData, card_name: String, effect_type: Enums.CardEffectType, value: int, cost: int) -> void:
-	for i: int in 4:
-		var card := CardData.new()
-		card.id = "%s_%s_%d" % [character.id, card_name.to_lower(), i]
-		card.card_name = card_name
-		card.energy_cost = cost
-		card.range_max = 3 if effect_type == Enums.CardEffectType.DAMAGE else 0
-		card.target_type = Enums.TargetType.SINGLE_ENEMY if effect_type == Enums.CardEffectType.DAMAGE else Enums.TargetType.SELF
-		var eff := CardEffect.new()
-		eff.effect_type = effect_type
-		eff.value = value
-		card.effects.append(eff)
-		card.description = "%s: %d" % [card_name, value]
-		character.starting_deck.append(card)
+func _load_deck(character: CharacterData, base_path: String, card_ids: Array) -> void:
+	for card_id: String in card_ids:
+		var path: String = base_path + card_id + ".tres"
+		var card: CardData = load(path) as CardData
+		if card:
+			# Duplicate so each card in deck is a unique instance
+			var copy: CardData = card.duplicate(true)
+			copy.id = "%s_%s_%d" % [character.id, card_id, character.starting_deck.size()]
+			character.starting_deck.append(copy)
+		else:
+			push_warning("Failed to load card: " + path)
 
 
 func _on_character_damaged(character: CharacterData, amount: int) -> void:
