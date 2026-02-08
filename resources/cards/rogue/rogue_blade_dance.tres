@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 0
+value = 4
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 0
+value = 4
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_3"]
+script = ExtResource("2")
+effect_type = 11
+value = 4
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "rogue_blade_dance"
+card_name = "Blade Dance"
+description = "Strike twice for 4 damage each and gain 4 Shield."
+energy_cost = 2
+range_min = 1
+range_max = 1
+target_type = 2
+effects = [SubResource("effect_1"), SubResource("effect_2"), SubResource("effect_3")]
+rarity = 2

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 9
+value = 0
+duration = 1
+status_effect = 7
+area_radius = 1
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "warrior_war_stomp"
+card_name = "War Stomp"
+description = "Stun all enemies in a 1-tile radius for 1 turn."
+energy_cost = 2
+range_min = 0
+range_max = 1
+target_type = 6
+effects = [SubResource("effect_1")]
+rarity = 2

@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 0
+value = 6
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 4
+value = 4
+duration = 3
+status_effect = 5
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_3"]
+script = ExtResource("2")
+effect_type = 4
+value = 0
+duration = 2
+status_effect = 1
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "rogue_death_mark"
+card_name = "Death Mark"
+description = "Deal 6 damage, apply 4 Poison for 3 turns, and Weakness for 2 turns."
+energy_cost = 2
+range_min = 1
+range_max = 1
+target_type = 2
+effects = [SubResource("effect_1"), SubResource("effect_2"), SubResource("effect_3")]
+rarity = 2

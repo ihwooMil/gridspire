@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 0
+value = 12
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 5
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 2
+
+[sub_resource type="Resource" id="effect_3"]
+script = ExtResource("2")
+effect_type = 4
+value = 0
+duration = 1
+status_effect = 7
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "warrior_unstoppable_force"
+card_name = "Unstoppable Force"
+description = "Deal 12 damage, push the enemy 2 tiles, and Stun for 1 turn."
+energy_cost = 3
+range_min = 1
+range_max = 1
+target_type = 2
+effects = [SubResource("effect_1"), SubResource("effect_2"), SubResource("effect_3")]
+rarity = 2

@@ -369,6 +369,10 @@ func _handle_mouse_click(event: InputEventMouseButton) -> void:
 		_handle_targeting_click(grid_pos, tile)
 		return
 
+	# Only allow selecting/moving the currently active character
+	var active_char: CharacterData = BattleManager.get_active_character()
+	var is_player_turn: bool = active_char != null and active_char.faction == Enums.Faction.PLAYER
+
 	if selected_character:
 		# If clicking a valid movement tile, move there
 		if grid_pos in highlighted_move_tiles:
@@ -377,13 +381,13 @@ func _handle_mouse_click(event: InputEventMouseButton) -> void:
 			BattleManager.move_character(character, grid_pos)
 		else:
 			deselect_character()
-			# If clicking another character, select them
-			if tile and tile.occupant and tile.occupant.faction == Enums.Faction.PLAYER:
-				select_character(tile.occupant)
+			# If clicking the active character again, re-select
+			if is_player_turn and tile and tile.occupant == active_char:
+				select_character(active_char)
 	else:
-		# Select a character on this tile
-		if tile and tile.occupant and tile.occupant.faction == Enums.Faction.PLAYER:
-			select_character(tile.occupant)
+		# Only allow selecting the active character on their turn
+		if is_player_turn and tile and tile.occupant == active_char:
+			select_character(active_char)
 		else:
 			selected_tile = grid_pos
 			queue_redraw()

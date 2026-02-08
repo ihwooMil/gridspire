@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 7
+value = 3
+duration = 0
+status_effect = 0
+area_radius = 1
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 9
+value = 3
+duration = 3
+status_effect = 5
+area_radius = 1
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "mage_toxic_cloud"
+card_name = "Toxic Cloud"
+description = "Deal 3 damage and apply 3 Poison for 3 turns in a 1-tile radius."
+energy_cost = 2
+range_min = 2
+range_max = 4
+target_type = 6
+effects = [SubResource("effect_1"), SubResource("effect_2")]
+rarity = 1

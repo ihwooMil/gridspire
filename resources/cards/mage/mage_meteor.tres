@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 7
+value = 12
+duration = 0
+status_effect = 0
+area_radius = 2
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "mage_meteor"
+card_name = "Meteor"
+description = "Call down a meteor dealing 12 damage in a 2-tile radius."
+energy_cost = 3
+range_min = 2
+range_max = 5
+target_type = 6
+effects = [SubResource("effect_1")]
+rarity = 2
