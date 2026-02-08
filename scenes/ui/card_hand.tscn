@@ -1,8 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://card_hand_scene"]
+[gd_scene load_steps=2 format=3 uid="uid://dpe0hsji6ohil"]
 
-[ext_resource type="Script" path="res://scripts/ui/card_hand.gd" id="1"]
+[ext_resource type="Script" uid="uid://bqefrgcoye4x" path="res://scripts/ui/card_hand.gd" id="1"]
 
 [node name="CardHand" type="HBoxContainer"]
+mouse_filter = 2
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0

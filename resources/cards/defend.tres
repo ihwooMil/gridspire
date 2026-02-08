@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="CardData" load_steps=4 format=3 uid="uid://ciug7lh22tgux"]
 
-[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+[ext_resource type="Script" uid="uid://dbce0eii7paqv" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" uid="uid://bgoks5d7mj8yf" path="res://scripts/core/card_effect_resource.gd" id="2"]
 
 [sub_resource type="Resource" id="effect_1"]
 script = ExtResource("2")
@@ -21,5 +21,5 @@ energy_cost = 1
 range_min = 0
 range_max = 0
 target_type = 0
-effects = [SubResource("effect_1")]
+effects = Array[ExtResource("2")]([SubResource("effect_1")])
 rarity = 0

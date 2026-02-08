@@ -233,18 +233,25 @@ Per-character draw/discard/exhaust pile management.
 ## Scene Tree (main.tscn)
 
 ```
-Main (Node2D) -- scripts/core/main.gd
+Main (Node2D) ─── scripts/core/main.gd
 ├── Camera2D
 ├── UI (CanvasLayer)
-│   └── BattleUI (Control, full-screen)
-│       ├── TopBar (HBoxContainer)
-│       │   └── TurnLabel
-│       ├── TimelinePanel (PanelContainer, right side)
-│       │   └── TimelineLabel
-│       ├── HandContainer (HBoxContainer, bottom center)
-│       └── EndTurnButton (Button, bottom right)
-└── GridContainer (Node2D) -- parent for grid tile sprites
+│   ├── BattleHUD (Control, mouse_filter=IGNORE) ─── battle_hud.gd
+│   │   ├── TopBar (HBoxContainer, mouse_filter=IGNORE)
+│   │   │   ├── %BattleTurnLabel, %BattleEnergyLabel
+│   │   │   └── %DrawCountLabel, %DiscardCountLabel
+│   │   ├── %CharacterInfo (PanelContainer) ─── character_info.gd
+│   │   ├── %CardHand (HBoxContainer, mouse_filter=IGNORE) ─── card_hand.gd
+│   │   │   └── [CardUI instances] (PanelContainer, mouse_filter=STOP)
+│   │   ├── %TimelineBar (VBoxContainer, mouse_filter=IGNORE) ─── timeline_bar.gd
+│   │   └── %EndTurnButton (Button)
+│   └── BattleResult (Control) ─── battle_result.gd
+└── GridContainer (Node2D) ─── grid_visual.gd
+    └── [Character sprite Node2D들]
 ```
+
+> **자세한 설계 문서**: `docs/DESIGN.md` 참고
+> **요구사항 문서**: `docs/REQUIREMENTS.md` 참고
 
 ---
 
@@ -259,9 +266,12 @@ Main (Node2D) -- scripts/core/main.gd
 
 ---
 
-## Next Steps (for other tasks)
+## Next Steps
 
-- **Task #2 (Grid System):** Visual grid rendering, tile highlighting, click-to-move, movement animation
-- **Task #3 (Combat/Cards):** Card UI widgets, card targeting flow, enemy AI, full effect resolution
-- **Task #4 (UI):** Card hand display, timeline HUD, character info panels, battle log
-- **Task #5 (QA):** Unit tests for grid pathfinding, timeline ordering, card effects, battle flow
+- 오버월드 맵 (Slay the Spire 스타일 노드 맵)
+- 보상/상점 시스템
+- 유물 시스템
+- 다중 스테이지/보스전
+- 캐릭터 해금/성장
+
+> 전체 향후 계획은 `docs/REQUIREMENTS.md`의 "향후 요구사항" 섹션 참고

@@ -8,6 +8,8 @@ signal tile_hovered(pos: Vector2i)
 signal character_selected(character: CharacterData)
 signal character_deselected()
 signal movement_animation_finished(character: CharacterData)
+signal target_selected(card: CardData, source: CharacterData, target: Variant)
+signal targeting_cancelled()
 
 ## Tile colors
 const COLOR_FLOOR := Color(0.2, 0.22, 0.25)
@@ -46,6 +48,11 @@ var selected_tile: Vector2i = Vector2i(-1, -1)
 
 ## Character sprite nodes: CharacterData -> Node2D
 var character_sprites: Dictionary = {}
+
+## Card targeting state
+var _targeting: bool = false
+var _targeting_card: CardData = null
+var _targeting_source: CharacterData = null
 
 ## Movement animation state
 var _animating: bool = false
@@ -332,6 +339,16 @@ func _handle_mouse_move(event: InputEventMouseMotion) -> void:
 
 
 func _handle_mouse_click(event: InputEventMouseButton) -> void:
+	if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		# Right-click cancels targeting
+		if _targeting:
+			exit_targeting_mode()
+			return
+		if selected_character:
+			deselect_character()
+			return
+		return
+
 	if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
 		return
 
@@ -347,12 +364,17 @@ func _handle_mouse_click(event: InputEventMouseButton) -> void:
 	if _animating:
 		return
 
+	# Card targeting mode: clicking selects a target
+	if _targeting:
+		_handle_targeting_click(grid_pos, tile)
+		return
+
 	if selected_character:
 		# If clicking a valid movement tile, move there
 		if grid_pos in highlighted_move_tiles:
 			var character: CharacterData = selected_character
 			deselect_character()
-			GridManager.move_character(character, grid_pos)
+			BattleManager.move_character(character, grid_pos)
 		else:
 			deselect_character()
 			# If clicking another character, select them
@@ -413,3 +435,64 @@ func clear_all_highlights() -> void:
 	path_preview_tiles = []
 	selected_tile = Vector2i(-1, -1)
 	queue_redraw()
+
+
+## Enter card targeting mode: show attack range and wait for target click.
+func enter_targeting_mode(card: CardData, source: CharacterData) -> void:
+	deselect_character()
+	_targeting = true
+	_targeting_card = card
+	_targeting_source = source
+	# Show attack range from source position
+	highlighted_attack_tiles = GridManager.get_tiles_in_range(
+		source.grid_position, card.range_min, card.range_max
+	)
+	queue_redraw()
+
+
+## Exit card targeting mode.
+func exit_targeting_mode() -> void:
+	_targeting = false
+	_targeting_card = null
+	_targeting_source = null
+	highlighted_attack_tiles = []
+	targeting_cancelled.emit()
+	queue_redraw()
+
+
+## Handle a click during targeting mode.
+func _handle_targeting_click(grid_pos: Vector2i, tile: GridTile) -> void:
+	if not _targeting or _targeting_card == null:
+		return
+
+	var card: CardData = _targeting_card
+	var source: CharacterData = _targeting_source
+
+	# Check if clicked position is in attack range
+	if grid_pos not in highlighted_attack_tiles:
+		exit_targeting_mode()
+		return
+
+	var target: Variant = null
+
+	match card.target_type:
+		Enums.TargetType.SINGLE_ENEMY:
+			if tile and tile.occupant and tile.occupant.faction == Enums.Faction.ENEMY and tile.occupant.is_alive():
+				target = tile.occupant
+		Enums.TargetType.SINGLE_ALLY:
+			if tile and tile.occupant and tile.occupant.faction == Enums.Faction.PLAYER and tile.occupant.is_alive():
+				target = tile.occupant
+		Enums.TargetType.TILE, Enums.TargetType.AREA:
+			target = grid_pos
+
+	if target != null:
+		# Clear targeting state before emitting signal
+		_targeting = false
+		_targeting_card = null
+		_targeting_source = null
+		highlighted_attack_tiles = []
+		queue_redraw()
+		target_selected.emit(card, source, target)
+	else:
+		# Invalid target, cancel
+		exit_targeting_mode()

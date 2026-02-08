@@ -10,6 +10,10 @@ func _ready() -> void:
 	BattleManager.character_healed.connect(_on_character_healed)
 	BattleManager.character_died.connect(_on_character_died)
 
+	# Wire up card targeting: HUD requests targeting → grid shows range → grid returns target
+	battle_hud.targeting_requested.connect(_on_targeting_requested)
+	grid_container.target_selected.connect(_on_target_selected)
+
 	# For now, start a test battle
 	_start_test_battle()
 
@@ -108,6 +112,14 @@ func _on_character_died(character: CharacterData) -> void:
 	var tile: GridTile = GridManager.get_tile(character.grid_position)
 	if tile and tile.occupant == character:
 		tile.occupant = null
+
+
+func _on_targeting_requested(card: CardData, source: CharacterData) -> void:
+	grid_container.enter_targeting_mode(card, source)
+
+
+func _on_target_selected(card: CardData, source: CharacterData, target: Variant) -> void:
+	BattleManager.play_card(card, source, target)
 
 
 func _spawn_damage_popup(character: CharacterData, amount: int, is_damage: bool) -> void:

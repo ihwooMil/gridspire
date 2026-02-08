@@ -12,6 +12,8 @@ extends Control
 @onready var draw_count_label: Label = %DrawCountLabel
 @onready var discard_count_label: Label = %DiscardCountLabel
 
+signal targeting_requested(card: CardData, source: CharacterData)
+
 var _active_character: CharacterData = null
 
 
@@ -72,10 +74,16 @@ func _on_card_selected(card: CardData) -> void:
 		return
 	if _active_character.faction != Enums.Faction.PLAYER:
 		return
-	# Use BattleManager's valid target system for auto-targeting
-	var targets: Array = BattleManager.get_valid_targets(card, _active_character)
-	if not targets.is_empty():
-		BattleManager.play_card(card, _active_character, targets[0])
+
+	# Cards that auto-target (no manual selection needed)
+	match card.target_type:
+		Enums.TargetType.SELF, Enums.TargetType.NONE, Enums.TargetType.ALL_ALLIES, Enums.TargetType.ALL_ENEMIES:
+			var targets: Array = BattleManager.get_valid_targets(card, _active_character)
+			if not targets.is_empty():
+				BattleManager.play_card(card, _active_character, targets[0])
+		_:
+			# Cards that need manual targeting (SINGLE_ENEMY, SINGLE_ALLY, TILE, AREA)
+			targeting_requested.emit(card, _active_character)
 
 
 func _on_end_turn_pressed() -> void:

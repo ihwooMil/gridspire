@@ -1,8 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://timeline_bar_scene"]
+[gd_scene load_steps=2 format=3 uid="uid://c44ehw2wonxj6"]
 
-[ext_resource type="Script" path="res://scripts/ui/timeline_bar.gd" id="1"]
+[ext_resource type="Script" uid="uid://cxpblq423s0nr" path="res://scripts/ui/timeline_bar.gd" id="1"]
 
 [node name="TimelineBar" type="VBoxContainer"]
+mouse_filter = 2
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
