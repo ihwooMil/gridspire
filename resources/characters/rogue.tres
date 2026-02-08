@@ -14,4 +14,3 @@ energy_per_turn = 3
 move_range = 4
 grid_position = Vector2i(0, 0)
 starting_deck = []
-rarity = 0

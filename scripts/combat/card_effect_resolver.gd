@@ -34,7 +34,7 @@ func apply_effect(effect: CardEffect, source: CharacterData, target: Variant) ->
 			_apply_move(effect, source, target)
 
 		Enums.CardEffectType.SHIELD:
-			_apply_shield(effect, target)
+			_apply_shield(effect, source, target)
 
 		Enums.CardEffectType.BUFF:
 			_apply_status(effect, target)
@@ -81,8 +81,10 @@ func _apply_damage(effect: CardEffect, source: CharacterData, target: Variant) -
 
 func _apply_heal(effect: CardEffect, target: Variant) -> void:
 	if target is CharacterData:
+		var hp_before: int = target.current_hp
 		target.heal(effect.value)
-		healing_done.emit(target, effect.value)
+		var actual_heal: int = target.current_hp - hp_before
+		healing_done.emit(target, actual_heal)
 
 
 func _apply_move(effect: CardEffect, source: CharacterData, target: Variant) -> void:
@@ -90,9 +92,8 @@ func _apply_move(effect: CardEffect, source: CharacterData, target: Variant) -> 
 		GridManager.move_character(source, target)
 
 
-func _apply_shield(effect: CardEffect, target: Variant) -> void:
-	if target is CharacterData:
-		target.modify_status(Enums.StatusEffect.SHIELD, effect.value, 1)
+func _apply_shield(effect: CardEffect, source: CharacterData, _target: Variant) -> void:
+	source.modify_status(Enums.StatusEffect.SHIELD, effect.value, 1)
 
 
 func _apply_status(effect: CardEffect, target: Variant) -> void:
