@@ -35,6 +35,17 @@ const COLOR_HP_BAR_BG := Color(0.15, 0.15, 0.15)
 const COLOR_HP_BAR_FILL := Color(0.2, 0.8, 0.3)
 const COLOR_HP_BAR_LOW := Color(0.9, 0.3, 0.2)
 
+## Sprite sheet definitions: character_name -> { path, cols, rows, frame_count, fps }
+var sprite_sheets: Dictionary = {
+	"Mage": {
+		"path": "res://res/Seo-A-walk.png",
+		"cols": 5,
+		"rows": 5,
+		"frame_count": 25,
+		"fps": 12.0,
+	},
+}
+
 ## Movement animation speed (pixels per second).
 var move_speed: float = 250.0
 
@@ -106,14 +117,76 @@ func _rebuild_character_sprites() -> void:
 			_create_character_sprite(tile.occupant)
 
 
-## Create a simple visual representation for a character.
+## Create a visual representation for a character.
+## If a sprite sheet is defined for this character, uses AnimatedSprite2D.
 func _create_character_sprite(character: CharacterData) -> Node2D:
 	var sprite := Node2D.new()
 	sprite.position = GridManager.grid_to_world(character.grid_position)
 	sprite.z_index = 1
 	add_child(sprite)
 	character_sprites[character] = sprite
+
+	# Check if this character has a sprite sheet
+	if sprite_sheets.has(character.character_name):
+		var sheet_info: Dictionary = sprite_sheets[character.character_name]
+		var anim_sprite := _create_animated_sprite(sheet_info)
+		if anim_sprite:
+			sprite.add_child(anim_sprite)
+			anim_sprite.play("idle")
+
 	return sprite
+
+
+## Create an AnimatedSprite2D from a sprite sheet definition.
+func _create_animated_sprite(sheet_info: Dictionary) -> AnimatedSprite2D:
+	var texture: Texture2D = load(sheet_info["path"])
+	if not texture:
+		return null
+
+	var cols: int = sheet_info["cols"]
+	var rows: int = sheet_info["rows"]
+	var frame_count: int = sheet_info["frame_count"]
+	var fps: float = sheet_info["fps"]
+	var frame_w: int = int(texture.get_width()) / cols
+	var frame_h: int = int(texture.get_height()) / rows
+
+	var frames := SpriteFrames.new()
+
+	# Idle animation (first frame only)
+	frames.add_animation("idle")
+	frames.set_animation_speed("idle", 1.0)
+	frames.set_animation_loop("idle", false)
+	var idle_tex := AtlasTexture.new()
+	idle_tex.atlas = texture
+	idle_tex.region = Rect2(0, 0, frame_w, frame_h)
+	frames.add_frame("idle", idle_tex)
+
+	# Walk animation (all frames)
+	frames.add_animation("walk")
+	frames.set_animation_speed("walk", fps)
+	frames.set_animation_loop("walk", true)
+	for i: int in frame_count:
+		var col: int = i % cols
+		var row: int = i / cols
+		var atlas_tex := AtlasTexture.new()
+		atlas_tex.atlas = texture
+		atlas_tex.region = Rect2(col * frame_w, row * frame_h, frame_w, frame_h)
+		frames.add_frame("walk", atlas_tex)
+
+	# Remove default animation if it exists
+	if frames.has_animation("default"):
+		frames.remove_animation("default")
+
+	var anim_sprite := AnimatedSprite2D.new()
+	anim_sprite.sprite_frames = frames
+	anim_sprite.centered = true
+	# Scale to fit tile size
+	var scale_factor: float = GridManager.tile_size.x / float(frame_w) * 0.9
+	anim_sprite.scale = Vector2(scale_factor, scale_factor)
+	# Offset up slightly so feet align with tile center
+	anim_sprite.offset = Vector2(0, -frame_h * 0.15)
+
+	return anim_sprite
 
 
 ## Ensure a sprite exists for the character, creating one if needed.
@@ -147,12 +220,19 @@ func _start_movement_animation(character: CharacterData, path: Array[Vector2i]) 
 	_anim_path = path
 	_anim_step = 0
 	_anim_progress = 0.0
+
+	# Start walk animation if character has AnimatedSprite2D
+	_play_character_anim(character, "walk")
+
 	# Start position is the character's pre-move position (first path entry's predecessor)
 	var start_pos: Vector2i = character.grid_position
 	if _anim_path.size() > 0:
 		# The character has already been moved in data; animate from old visual position
 		_anim_from = _anim_sprite.position
 		_anim_to = GridManager.grid_to_world(_anim_path[0])
+
+		# Flip sprite based on movement direction
+		_flip_sprite_towards(character, _anim_path[0])
 
 
 func _process(delta: float) -> void:
@@ -170,9 +250,10 @@ func _process(delta: float) -> void:
 		_anim_progress = 0.0
 
 		if _anim_step >= _anim_path.size():
-			# Animation complete
+			# Animation complete — switch to idle
 			_animating = false
 			_anim_sprite.position = GridManager.grid_to_world(_anim_character.grid_position)
+			_play_character_anim(_anim_character, "idle")
 			var finished_character: CharacterData = _anim_character
 			_anim_character = null
 			_anim_sprite = null
@@ -184,6 +265,8 @@ func _process(delta: float) -> void:
 		else:
 			_anim_from = _anim_to
 			_anim_to = GridManager.grid_to_world(_anim_path[_anim_step])
+			# Flip sprite for new direction
+			_flip_sprite_towards(_anim_character, _anim_path[_anim_step])
 
 	_anim_sprite.position = _anim_from.lerp(_anim_to, _anim_progress)
 	queue_redraw()
@@ -266,35 +349,40 @@ func _draw_characters() -> void:
 		var sprite: Node2D = character_sprites[character]
 		var center: Vector2 = sprite.position
 		var half: Vector2 = ts * 0.4
+		var has_sprite_sheet: bool = sprite_sheets.has(character.character_name)
 
-		# Body shape
-		var body_color: Color = _get_faction_color(character.faction)
-		if character == selected_character:
-			body_color = body_color.lightened(0.3)
+		if not has_sprite_sheet:
+			# Draw circle placeholder for characters without sprite sheets
+			var body_color: Color = _get_faction_color(character.faction)
+			if character == selected_character:
+				body_color = body_color.lightened(0.3)
+			draw_circle(center, half.x * 0.7, body_color)
+			draw_arc(center, half.x * 0.7, 0, TAU, 32, body_color.lightened(0.2), 2.0)
 
-		# Draw character as a filled circle with a border
-		draw_circle(center, half.x * 0.7, body_color)
-		draw_arc(center, half.x * 0.7, 0, TAU, 32, body_color.lightened(0.2), 2.0)
+			# Character initial
+			var font: Font = ThemeDB.fallback_font
+			var font_size: int = int(ts.y * 0.35)
+			var ch_text: String = character.character_name.left(1)
+			var text_size: Vector2 = font.get_string_size(ch_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+			draw_string(
+				font,
+				center + Vector2(-text_size.x * 0.5, text_size.y * 0.3),
+				ch_text,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				font_size,
+				Color.WHITE,
+			)
 
-		# Character initial
-		var font: Font = ThemeDB.fallback_font
-		var font_size: int = int(ts.y * 0.35)
-		var ch_text: String = character.character_name.left(1)
-		var text_size: Vector2 = font.get_string_size(ch_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-		draw_string(
-			font,
-			center + Vector2(-text_size.x * 0.5, text_size.y * 0.3),
-			ch_text,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			font_size,
-			Color.WHITE,
-		)
+		# Selection highlight for sprite-sheet characters
+		if has_sprite_sheet and character == selected_character:
+			draw_arc(center, half.x * 0.85, 0, TAU, 32, Color(1.0, 1.0, 0.3, 0.6), 2.0)
 
-		# HP bar
+		# HP bar (always drawn for all characters)
 		var bar_width: float = ts.x * 0.7
 		var bar_height: float = 4.0
-		var bar_start: Vector2 = center + Vector2(-bar_width * 0.5, half.y * 0.8)
+		var bar_y_offset: float = half.y * 0.8 if not has_sprite_sheet else half.y * 1.0
+		var bar_start: Vector2 = center + Vector2(-bar_width * 0.5, bar_y_offset)
 		var bg_rect := Rect2(bar_start, Vector2(bar_width, bar_height))
 		draw_rect(bg_rect, COLOR_HP_BAR_BG, true)
 
@@ -302,6 +390,33 @@ func _draw_characters() -> void:
 		var hp_color: Color = COLOR_HP_BAR_FILL if hp_ratio > 0.3 else COLOR_HP_BAR_LOW
 		var fill_rect := Rect2(bar_start, Vector2(bar_width * hp_ratio, bar_height))
 		draw_rect(fill_rect, hp_color, true)
+
+
+## Play an animation on a character's AnimatedSprite2D (if it has one).
+func _play_character_anim(character: CharacterData, anim_name: String) -> void:
+	if not character_sprites.has(character):
+		return
+	var sprite: Node2D = character_sprites[character]
+	for child: Node in sprite.get_children():
+		if child is AnimatedSprite2D:
+			var anim: AnimatedSprite2D = child
+			if anim.sprite_frames and anim.sprite_frames.has_animation(anim_name):
+				anim.play(anim_name)
+			return
+
+
+## Flip sprite horizontally based on movement direction.
+func _flip_sprite_towards(character: CharacterData, target_pos: Vector2i) -> void:
+	if not character_sprites.has(character):
+		return
+	var sprite: Node2D = character_sprites[character]
+	var current_world: Vector2 = sprite.position
+	var target_world: Vector2 = GridManager.grid_to_world(target_pos)
+	for child: Node in sprite.get_children():
+		if child is AnimatedSprite2D:
+			# Flip if moving left
+			child.flip_h = target_world.x < current_world.x
+			return
 
 
 func _get_faction_color(faction: Enums.Faction) -> Color:
