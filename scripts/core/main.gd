@@ -1,18 +1,13 @@
 ## Main scene script — entry point and top-level scene coordinator.
 extends Node2D
 
-@onready var end_turn_button: Button = $UI/BattleUI/EndTurnButton
-@onready var turn_label: Label = $UI/BattleUI/TopBar/TurnLabel
-@onready var hand_container: HBoxContainer = $UI/BattleUI/HandContainer
-@onready var timeline_label: Label = $UI/BattleUI/TimelinePanel/TimelineLabel
+@onready var battle_hud: BattleHUD = $UI/BattleHUD
 @onready var grid_container: Node2D = $GridContainer
 
 
 func _ready() -> void:
-	end_turn_button.pressed.connect(_on_end_turn_pressed)
-	BattleManager.turn_started.connect(_on_turn_started)
-	BattleManager.battle_ended.connect(_on_battle_ended)
-	BattleManager.timeline_updated.connect(_on_timeline_updated)
+	BattleManager.character_damaged.connect(_on_character_damaged)
+	BattleManager.character_healed.connect(_on_character_healed)
 	BattleManager.character_died.connect(_on_character_died)
 
 	# For now, start a test battle
@@ -51,11 +46,12 @@ func _start_test_battle() -> void:
 	enemy_a.move_range = 2
 	enemy_a.faction = Enums.Faction.ENEMY
 
-	# Create some test cards
+	# Create cards for characters
 	_add_basic_cards(warrior, "Strike", Enums.CardEffectType.DAMAGE, 6, 1)
 	_add_basic_cards(warrior, "Defend", Enums.CardEffectType.SHIELD, 5, 1)
 	_add_basic_cards(mage, "Fireball", Enums.CardEffectType.DAMAGE, 8, 1)
 	_add_basic_cards(mage, "Heal", Enums.CardEffectType.HEAL, 6, 1)
+	_add_basic_cards(enemy_a, "Slash", Enums.CardEffectType.DAMAGE, 5, 1)
 
 	# Initialize grid
 	GridManager.initialize_grid(10, 8)
@@ -76,12 +72,9 @@ func _start_test_battle() -> void:
 	grid_container.ensure_character_sprite(mage)
 	grid_container.ensure_character_sprite(enemy_a)
 
-	# Initialize decks
+	# Start battle (BattleManager initializes decks internally)
 	var players: Array[CharacterData] = [warrior, mage]
 	var enemies: Array[CharacterData] = [enemy_a]
-	DeckManager.initialize_all_decks(players + enemies)
-
-	# Start battle
 	BattleManager.start_battle(players, enemies)
 
 
@@ -101,37 +94,24 @@ func _add_basic_cards(character: CharacterData, card_name: String, effect_type: 
 		character.starting_deck.append(card)
 
 
-func _on_end_turn_pressed() -> void:
-	BattleManager.end_turn()
+func _on_character_damaged(character: CharacterData, amount: int) -> void:
+	_spawn_damage_popup(character, amount, true)
 
 
-func _on_turn_started(character: CharacterData) -> void:
-	turn_label.text = "%s's Turn | HP: %d/%d | Energy: %d" % [
-		character.character_name,
-		character.current_hp,
-		character.max_hp,
-		BattleManager.current_energy,
-	]
-
-
-func _on_battle_ended(result: String) -> void:
-	turn_label.text = "Battle %s!" % result.to_upper()
-
-
-func _on_timeline_updated() -> void:
-	var preview: Array[CharacterData] = BattleManager.get_timeline_preview(8)
-	var lines: PackedStringArray = ["Timeline:"]
-	for i: int in preview.size():
-		var ch: CharacterData = preview[i]
-		var marker: String = " >> " if i == 0 else "    "
-		lines.append("%s%s (SPD:%d)" % [marker, ch.character_name, ch.get_effective_speed()])
-	timeline_label.text = "\n".join(lines)
+func _on_character_healed(character: CharacterData, amount: int) -> void:
+	_spawn_damage_popup(character, amount, false)
 
 
 func _on_character_died(character: CharacterData) -> void:
-	# Remove sprite from grid when character dies
 	grid_container.remove_character_sprite(character)
 	# Clear occupant from tile
 	var tile: GridTile = GridManager.get_tile(character.grid_position)
 	if tile and tile.occupant == character:
 		tile.occupant = null
+
+
+func _spawn_damage_popup(character: CharacterData, amount: int, is_damage: bool) -> void:
+	var popup := DamagePopup.new()
+	var world_pos: Vector2 = GridManager.grid_to_world(character.grid_position)
+	popup.setup(amount, is_damage, world_pos)
+	grid_container.add_child(popup)

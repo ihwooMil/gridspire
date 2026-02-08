@@ -24,6 +24,8 @@ func _ready() -> void:
 	BattleManager.card_played.connect(_on_card_played)
 	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
+	BattleManager.energy_changed.connect(_on_energy_changed)
+	BattleManager.hand_updated.connect(_on_hand_updated)
 
 	_set_battle_visible(false)
 
@@ -70,40 +72,30 @@ func _on_card_selected(card: CardData) -> void:
 		return
 	if _active_character.faction != Enums.Faction.PLAYER:
 		return
-	# For now, auto-target: self-targeting cards target self, enemy-targeting cards target first alive enemy
-	var target: Variant = _resolve_auto_target(card, _active_character)
-	if target != null:
-		BattleManager.play_card(card, _active_character, target)
-
-
-func _resolve_auto_target(card: CardData, source: CharacterData) -> Variant:
-	match card.target_type:
-		Enums.TargetType.SELF, Enums.TargetType.NONE:
-			return source
-		Enums.TargetType.SINGLE_ENEMY:
-			if BattleManager.state:
-				for enemy: CharacterData in BattleManager.state.enemy_characters:
-					if enemy.is_alive():
-						return enemy
-		Enums.TargetType.SINGLE_ALLY:
-			if BattleManager.state:
-				for ally: CharacterData in BattleManager.state.player_characters:
-					if ally.is_alive():
-						return ally
-		Enums.TargetType.ALL_ENEMIES, Enums.TargetType.ALL_ALLIES:
-			return source
-		Enums.TargetType.TILE, Enums.TargetType.AREA:
-			return source.grid_position
-	return null
+	# Use BattleManager's valid target system for auto-targeting
+	var targets: Array = BattleManager.get_valid_targets(card, _active_character)
+	if not targets.is_empty():
+		BattleManager.play_card(card, _active_character, targets[0])
 
 
 func _on_end_turn_pressed() -> void:
 	BattleManager.end_turn()
 
 
+func _on_energy_changed(current: int, _max_energy: int) -> void:
+	if energy_label:
+		energy_label.text = "Energy: %d / %d" % [current, _max_energy]
+	card_hand.update_playability()
+
+
+func _on_hand_updated(_hand: Array[CardData]) -> void:
+	card_hand.refresh_hand()
+	_update_pile_counts()
+
+
 func _update_energy_display() -> void:
 	if energy_label:
-		energy_label.text = "Energy: %d" % BattleManager.current_energy
+		energy_label.text = "Energy: %d / %d" % [BattleManager.current_energy, BattleManager.max_energy]
 
 
 func _update_pile_counts() -> void:
