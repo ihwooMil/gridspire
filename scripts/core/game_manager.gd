@@ -16,6 +16,10 @@ var run_seed: int = 0
 var current_map: MapData = null
 var current_encounter: EncounterData = null
 
+## Difficulty / Ascension system
+var difficulty: int = 0  # 0 = Normal, 1-20 = Ascension levels
+var max_unlocked_difficulty: int = 0
+
 
 func _ready() -> void:
 	run_seed = randi()
@@ -29,7 +33,8 @@ func change_state(new_state: Enums.GameState) -> void:
 func start_new_run() -> void:
 	party.clear()
 	current_floor = 1
-	gold = 100
+	var mods: Dictionary = get_difficulty_modifiers()
+	gold = mods.starting_gold
 	run_seed = randi()
 	current_encounter = null
 
@@ -41,10 +46,16 @@ func start_new_run() -> void:
 func start_new_run_with_character(id: String) -> void:
 	party.clear()
 	current_floor = 1
-	gold = 100
+	var mods: Dictionary = get_difficulty_modifiers()
+	gold = mods.starting_gold
 	run_seed = randi()
 
 	_create_character(id)
+
+	# Apply starting HP penalty from difficulty
+	if mods.starting_hp_penalty > 0:
+		for ch: CharacterData in party:
+			ch.current_hp = maxi(ch.current_hp - mods.starting_hp_penalty, 1)
 
 	current_map = MapGenerator.generate(run_seed)
 	current_encounter = null
@@ -162,3 +173,48 @@ func get_party_alive() -> Array[CharacterData]:
 
 func is_party_dead() -> bool:
 	return get_party_alive().is_empty()
+
+
+## Get companion choices: character classes not yet in party.
+func get_companion_choices() -> Array[String]:
+	var all_classes: Array[String] = ["warrior", "mage", "rogue"]
+	var party_ids: Array[String] = []
+	for ch: CharacterData in party:
+		party_ids.append(ch.id)
+	var choices: Array[String] = []
+	for cls: String in all_classes:
+		if cls not in party_ids:
+			choices.append(cls)
+	return choices
+
+
+## Recruit a companion and add to party.
+func recruit_companion(id: String) -> void:
+	_create_character(id)
+
+
+## Unlock next difficulty on run completion.
+func on_run_complete() -> void:
+	max_unlocked_difficulty = mini(difficulty + 1, 20)
+
+
+## Get difficulty modifiers based on current ascension level.
+func get_difficulty_modifiers() -> Dictionary:
+	var mods: Dictionary = {
+		"enemy_hp_mult": 1.0,
+		"enemy_damage_mult": 1.0,
+		"starting_gold": 100,
+		"starting_hp_penalty": 0,
+		"elite_count_bonus": 0,
+		"boss_hp_mult": 1.0,
+	}
+	if difficulty >= 1: mods.enemy_hp_mult = 1.1
+	if difficulty >= 3: mods.enemy_damage_mult = 1.1
+	if difficulty >= 5: mods.starting_gold = 80
+	if difficulty >= 7: mods.starting_hp_penalty = 5
+	if difficulty >= 10: mods.elite_count_bonus = 1
+	if difficulty >= 13: mods.enemy_hp_mult = 1.25
+	if difficulty >= 16: mods.enemy_damage_mult = 1.25
+	if difficulty >= 18: mods.boss_hp_mult = 1.5
+	if difficulty >= 20: mods.starting_hp_penalty = 10
+	return mods

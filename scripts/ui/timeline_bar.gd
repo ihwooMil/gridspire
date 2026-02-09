@@ -10,9 +10,18 @@ const BAR_MARGIN: float = 20.0
 
 
 func _ready() -> void:
+	custom_minimum_size = Vector2(200, 48)
 	BattleManager.timeline_updated.connect(_on_update)
 	BattleManager.turn_started.connect(func(_c: CharacterData) -> void: _on_update())
 	BattleManager.battle_started.connect(_on_update)
+	resized.connect(queue_redraw)
+
+
+func _exit_tree() -> void:
+	if BattleManager.timeline_updated.is_connected(_on_update):
+		BattleManager.timeline_updated.disconnect(_on_update)
+	if BattleManager.battle_started.is_connected(_on_update):
+		BattleManager.battle_started.disconnect(_on_update)
 
 
 func _on_update() -> void:
@@ -20,6 +29,11 @@ func _on_update() -> void:
 
 
 func _draw() -> void:
+	# Ensure we have a valid width
+	if size.x <= 0.0:
+		var parent_size: Vector2 = get_parent_area_size()
+		if parent_size.x > 0:
+			size.x = parent_size.x - position.x
 	var bar_width: float = size.x - BAR_MARGIN * 2.0
 	if bar_width <= 0.0:
 		return

@@ -90,6 +90,9 @@ func _on_node_clicked(map_node: MapNode) -> void:
 			_do_rest()
 		Enums.MapNodeType.EVENT:
 			GameManager.change_state(Enums.GameState.EVENT)
+		Enums.MapNodeType.COMPANION:
+			GameManager.set_meta("companion_event", true)
+			GameManager.change_state(Enums.GameState.EVENT)
 
 
 func _start_encounter(map_node: MapNode) -> void:

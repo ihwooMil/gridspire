@@ -45,6 +45,25 @@ func _ready() -> void:
 	_set_battle_visible(false)
 
 
+func _exit_tree() -> void:
+	if BattleManager.turn_started.is_connected(_on_turn_started):
+		BattleManager.turn_started.disconnect(_on_turn_started)
+	if BattleManager.turn_ended.is_connected(_on_turn_ended):
+		BattleManager.turn_ended.disconnect(_on_turn_ended)
+	if BattleManager.card_played.is_connected(_on_card_played):
+		BattleManager.card_played.disconnect(_on_card_played)
+	if BattleManager.battle_started.is_connected(_on_battle_started):
+		BattleManager.battle_started.disconnect(_on_battle_started)
+	if BattleManager.battle_ended.is_connected(_on_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_battle_ended)
+	if BattleManager.energy_changed.is_connected(_on_energy_changed):
+		BattleManager.energy_changed.disconnect(_on_energy_changed)
+	if BattleManager.hand_updated.is_connected(_on_hand_updated):
+		BattleManager.hand_updated.disconnect(_on_hand_updated)
+	if DeckManager.cards_discarded.is_connected(_on_cards_discarded):
+		DeckManager.cards_discarded.disconnect(_on_cards_discarded)
+
+
 func _on_battle_started() -> void:
 	_set_battle_visible(true)
 

@@ -99,6 +99,17 @@ func _ready() -> void:
 	GridManager.movement_started.connect(_on_movement_started)
 
 
+func _exit_tree() -> void:
+	if GridManager.grid_initialized.is_connected(_on_grid_initialized):
+		GridManager.grid_initialized.disconnect(_on_grid_initialized)
+	if GridManager.character_moved.is_connected(_on_character_moved):
+		GridManager.character_moved.disconnect(_on_character_moved)
+	if GridManager.tile_changed.is_connected(_on_tile_changed):
+		GridManager.tile_changed.disconnect(_on_tile_changed)
+	if GridManager.movement_started.is_connected(_on_movement_started):
+		GridManager.movement_started.disconnect(_on_movement_started)
+
+
 func _on_grid_initialized(_width: int, _height: int) -> void:
 	_rebuild_character_sprites()
 	queue_redraw()

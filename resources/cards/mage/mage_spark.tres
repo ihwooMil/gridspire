@@ -26,3 +26,5 @@ range_max = 4
 target_type = 2
 effects = [SubResource("effect_1")]
 rarity = 0
+element = "lightning"
+element_count = 1

@@ -5,26 +5,25 @@
 
 [sub_resource type="Resource" id="effect_1"]
 script = ExtResource("2")
-effect_type = 7
-value = 12
+effect_type = 12
+value = 0
 duration = 0
 status_effect = 0
-area_radius = 2
+area_radius = 0
 push_pull_distance = 0
-dice_count = 2
-dice_sides = 6
+dice_count = 0
+dice_sides = 0
 dice_bonus = 0
+shield_damage_multiplier = 1.0
 
 [resource]
 script = ExtResource("1")
-id = "mage_meteor"
-card_name = "Meteor"
-description = "Call down a meteor dealing 12 damage in a 2-tile radius."
-energy_cost = 3
-range_min = 2
-range_max = 5
-target_type = 6
+id = "warrior_shield_strike"
+card_name = "Shield Strike"
+description = "Deal damage equal to your current shield."
+energy_cost = 1
+range_min = 1
+range_max = 1
+target_type = 2
 effects = [SubResource("effect_1")]
-rarity = 2
-element = "fire"
-element_count = 2
+rarity = 1

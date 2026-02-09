@@ -24,3 +24,5 @@ range_max = 2
 target_type = 5
 effects = [SubResource("effect_1")]
 rarity = 0
+element = "ice"
+element_count = 1

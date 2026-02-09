@@ -289,12 +289,14 @@ func pull_character(source: CharacterData, target: CharacterData, distance: int)
 ## Slide a character in a direction, stopping at walls/edges/occupants.
 func _slide_character(character: CharacterData, direction: Vector2i, distance: int) -> void:
 	var current: Vector2i = character.grid_position
+	var path: Array[Vector2i] = []
 	for i: int in distance:
 		var next: Vector2i = current + direction
 		var tile: GridTile = get_tile(next)
 		if tile == null or not tile.is_available():
 			break
 		current = next
+		path.append(current)
 
 	if current != character.grid_position:
 		var old_pos: Vector2i = character.grid_position
@@ -305,6 +307,7 @@ func _slide_character(character: CharacterData, direction: Vector2i, distance: i
 		if new_tile:
 			new_tile.occupant = character
 		character.grid_position = current
+		movement_started.emit(character, path)
 		character_moved.emit(character, old_pos, current)
 
 

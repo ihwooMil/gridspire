@@ -1,14 +1,22 @@
-## Event screen — shown when the player visits an EVENT node on the map.
-## Picks one of three random event types and presents choices.
+## Event screen — shown when the player visits an EVENT or COMPANION node on the map.
+## Picks one of three random event types and presents choices,
+## or shows the companion recruitment UI for COMPANION nodes.
 extends Control
 
 const CardRegistry = preload("res://scripts/core/card_registry.gd")
 
+const CLASS_DESCRIPTIONS: Dictionary = {
+	"warrior": "A stalwart defender who blocks damage and retaliates with shield strikes.",
+	"mage": "A spellcaster who stacks elemental power for devastating combos.",
+	"rogue": "A swift fighter who chains combo attacks for massive bonus damage.",
+}
 
-enum EventType { BLACKSMITH, HEALING_FOUNTAIN, WANDERING_MERCHANT }
+
+enum EventType { BLACKSMITH, HEALING_FOUNTAIN, WANDERING_MERCHANT, COMPANION }
 
 var _event_type: EventType = EventType.BLACKSMITH
 var _upgrade_offer: StatUpgrade = null
+var _is_companion_node: bool = false
 
 # UI references (built dynamically)
 var _title_label: Label
@@ -17,10 +25,23 @@ var _button_container: VBoxContainer
 
 
 func _ready() -> void:
-	_event_type = EventType.values()[randi_range(0, 2)]
+	# Check if this is a companion node (set by scene manager / overworld)
+	_is_companion_node = _check_companion_node()
+	if _is_companion_node:
+		_event_type = EventType.COMPANION
+	else:
+		_event_type = EventType.values()[randi_range(0, 2)]
 	if _event_type == EventType.WANDERING_MERCHANT:
 		_load_random_upgrade()
 	_build_event_ui()
+
+
+func _check_companion_node() -> bool:
+	# The overworld map sets a meta flag on GameManager when entering a COMPANION node
+	if GameManager.has_meta("companion_event"):
+		GameManager.remove_meta("companion_event")
+		return true
+	return false
 
 
 func _load_random_upgrade() -> void:
@@ -82,6 +103,8 @@ func _build_event_ui() -> void:
 			_setup_healing_fountain()
 		EventType.WANDERING_MERCHANT:
 			_setup_wandering_merchant()
+		EventType.COMPANION:
+			_setup_companion()
 
 
 func _setup_blacksmith() -> void:
@@ -182,6 +205,33 @@ func _on_merchant_buy(character: CharacterData, cost: int) -> void:
 	if not GameManager.spend_gold(cost):
 		return
 	character.apply_stat_upgrade(_upgrade_offer)
+	_return_to_map()
+
+
+func _setup_companion() -> void:
+	_title_label.text = "Companion Joins!"
+	_desc_label.text = "A fellow adventurer offers to join your party. Choose one to recruit:"
+
+	var choices: Array[String] = GameManager.get_companion_choices()
+	if choices.is_empty():
+		_desc_label.text = "No new companions are available right now."
+		_add_leave_button()
+		return
+
+	for cls: String in choices:
+		var btn := Button.new()
+		var display_name: String = cls.capitalize()
+		var desc: String = CLASS_DESCRIPTIONS.get(cls, "A mysterious adventurer.")
+		btn.text = "%s - %s" % [display_name, desc]
+		btn.custom_minimum_size = Vector2(500, 50)
+		btn.pressed.connect(_on_companion_choice.bind(cls))
+		_button_container.add_child(btn)
+
+	_add_leave_button()
+
+
+func _on_companion_choice(id: String) -> void:
+	GameManager.recruit_companion(id)
 	_return_to_map()
 
 

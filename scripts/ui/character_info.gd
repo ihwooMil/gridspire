@@ -45,6 +45,17 @@ func _ready() -> void:
 	BattleManager.card_played.connect(func(_c: CardData, _s: CharacterData, _t: Variant) -> void: refresh())
 
 
+func _exit_tree() -> void:
+	if BattleManager.character_damaged.is_connected(_on_character_changed):
+		BattleManager.character_damaged.disconnect(_on_character_changed)
+	if BattleManager.character_healed.is_connected(_on_character_changed):
+		BattleManager.character_healed.disconnect(_on_character_changed)
+	if BattleManager.energy_changed.is_connected(_on_energy_changed):
+		BattleManager.energy_changed.disconnect(_on_energy_changed)
+	if BattleManager.hand_updated.is_connected(_on_hand_updated):
+		BattleManager.hand_updated.disconnect(_on_hand_updated)
+
+
 func setup(character: CharacterData) -> void:
 	tracked_character = character
 	refresh()

@@ -35,3 +35,5 @@ range_max = 3
 target_type = 2
 effects = [SubResource("effect_1"), SubResource("effect_2")]
 rarity = 0
+element = "ice"
+element_count = 1

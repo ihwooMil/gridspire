@@ -50,9 +50,9 @@ docs/         # 기획서, 트러블슈팅 문서
 ```
 
 ## Autoload 싱글톤
-- `GameManager` — 게임 상태, 파티, 골드, 맵 관리
+- `GameManager` — 게임 상태, 파티, 골드, 맵 관리, 난이도/승천 시스템
 - `SceneManager` — 씬 전환
-- `BattleManager` — 전투 진행, 턴 관리
+- `BattleManager` — 전투 진행, 턴 관리, 소환수 시그널 (`summon_added`)
 - `GridManager` — 그리드 좌표, 이동, 범위 계산 (tile_size 2:1 비율, 동적 계산)
 - `DeckManager` — 덱 셔플, 드로우, 버리기, 무덤 조회 (get_discard_pile)
 
@@ -62,3 +62,31 @@ docs/         # 기획서, 트러블슈팅 문서
 - **하단 중앙**: 카드 핸드 (부채꼴, 드로우 애니메이션)
 - **우측**: End Turn 버튼 + 무덤 버튼 (클릭 시 팝업)
 - **그리드**: 2:1 타일, 상단 2줄 벽 장식, 캐릭터 standing 오프셋
+
+## 시그널 관리 규칙
+- 싱글톤(BattleManager, GridManager 등)에 시그널 connect 시 반드시 `_exit_tree()`에서 disconnect
+- `is_connected()` 체크 후 disconnect 패턴 사용
+- 이유: 씬이 `queue_free()`로 해제된 뒤에도 싱글톤 → 해제된 노드 연결이 남아 에러 발생 가능
+
+## 난이도/승천 시스템
+- `GameManager.difficulty`: 0 = Normal, 1-20 = Ascension 레벨
+- `GameManager.max_unlocked_difficulty`: 보스 클리어 시 +1 해금
+- `GameManager.get_difficulty_modifiers()`: 적 HP/공격력 배율, 시작 골드, HP 패널티 등 반환
+- `battle_scene.gd`에서 적 생성 시 `_apply_difficulty_modifiers()` 호출
+
+## 동료 합류 이벤트
+- 맵 노드 타입 `COMPANION` (아이콘 "+", 색상 teal)
+- 파티 < 3명일 때 rows 3-6에 배치
+- `GameManager.set_meta("companion_event", true)` → EVENT 씬에서 감지하여 동료 선택 UI 표시
+- `GameManager.get_companion_choices()`: 파티에 없는 클래스 반환
+- `GameManager.recruit_companion(id)`: 해당 클래스 캐릭터 생성 및 파티 추가
+
+## 카드 아키타입
+- **Warrior (방어→반격)**: SHIELD 효과로 방어 → SHIELD_STRIKE 효과로 방패 스택 기반 데미지
+  - `shield_damage_multiplier` 필드 사용
+- **Mage (원소 스택)**: `element`, `element_count` 필드로 원소 스택 축적
+  - `scale_element`, `scale_per_stack`으로 스택 비례 스케일링
+  - `consumes_stacks`로 스택 소모 시 대폭발
+- **Rogue (콤보 체인)**: `tags` (PackedStringArray)로 태그 부여
+  - `combo_tag`, `combo_bonus`로 선행 태그 확인 시 보너스 데미지
+  - `combo_only`로 콤보 조건 미충족 시 효과 스킵

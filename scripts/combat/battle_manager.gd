@@ -17,6 +17,7 @@ signal timeline_updated()
 signal energy_changed(current: int, max_energy: int)
 signal hand_updated(hand: Array[CardData])
 signal action_resolved(action: CombatAction)
+signal summon_added(summon: CharacterData, owner: CharacterData)
 
 var state: BattleState = null
 var current_energy: int = 0
@@ -591,6 +592,7 @@ func _on_summon_created(summon: CharacterData, owner: CharacterData) -> void:
 	# Initialize deck
 	DeckManager.initialize_deck(summon)
 	timeline_updated.emit()
+	summon_added.emit(summon, owner)
 
 
 # --- Signal callbacks from CardEffectResolver ---

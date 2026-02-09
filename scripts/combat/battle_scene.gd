@@ -18,6 +18,7 @@ func _ready() -> void:
 	battle_hud.drag_drop_requested.connect(_on_drag_drop)
 	battle_hud.drag_hover_updated.connect(_on_drag_hover)
 	grid_container.target_selected.connect(_on_target_selected)
+	BattleManager.summon_added.connect(_on_summon_added)
 
 	# Start the battle from encounter data
 	_start_battle()
@@ -98,6 +99,7 @@ func _start_battle() -> void:
 	# Place enemies on right side (skip wall rows 0-1)
 	var enemy_start_col: int = grid_w - 2
 	for i: int in enemies.size():
+		_apply_difficulty_modifiers(enemies[i])
 		var row: int = (grid_h / 2) - (enemies.size() / 2) + i
 		row = clampi(row, 2, grid_h - 1)
 		GridManager.place_character(enemies[i], Vector2i(enemy_start_col, row))
@@ -220,6 +222,27 @@ func _place_obstacles(grid_w: int, grid_h: int) -> void:
 	var hx: int = rng.randi_range(3, grid_w - 3)
 	var hy: int = rng.randi_range(2, grid_h - 2)
 	GridManager.set_tile_type(Vector2i(hx, hy), Enums.TileType.HAZARD)
+
+
+func _exit_tree() -> void:
+	if BattleManager.character_damaged.is_connected(_on_character_damaged):
+		BattleManager.character_damaged.disconnect(_on_character_damaged)
+	if BattleManager.character_healed.is_connected(_on_character_healed):
+		BattleManager.character_healed.disconnect(_on_character_healed)
+	if BattleManager.character_died.is_connected(_on_character_died):
+		BattleManager.character_died.disconnect(_on_character_died)
+	if BattleManager.summon_added.is_connected(_on_summon_added):
+		BattleManager.summon_added.disconnect(_on_summon_added)
+
+
+func _on_summon_added(summon: CharacterData, _owner: CharacterData) -> void:
+	grid_container.ensure_character_sprite(summon)
+
+
+func _apply_difficulty_modifiers(enemy: CharacterData) -> void:
+	var mods: Dictionary = GameManager.get_difficulty_modifiers()
+	enemy.max_hp = int(enemy.max_hp * mods.enemy_hp_mult)
+	enemy.current_hp = enemy.max_hp
 
 
 func _on_character_damaged(character: CharacterData, amount: int) -> void:

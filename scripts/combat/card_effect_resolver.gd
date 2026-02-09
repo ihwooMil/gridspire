@@ -199,11 +199,15 @@ func _apply_summon(effect: CardEffect, source: CharacterData, target: Variant) -
 	var summon: CharacterData = SummonManager.create_summon(effect.summon_id, source)
 	if summon == null:
 		return
-	# Place summon on the grid
+	# Place summon on the grid (find available tile)
 	var place_pos: Vector2i = source.grid_position
 	if target is Vector2i:
 		place_pos = target
-	summon.grid_position = place_pos
+	if not GridManager.place_character(summon, place_pos):
+		# If target tile occupied, try adjacent tiles
+		for neighbor: Vector2i in GridManager.get_orthogonal_neighbors(place_pos):
+			if GridManager.place_character(summon, neighbor):
+				break
 	source.active_summons.append(summon)
 	summon_created.emit(summon, source)
 

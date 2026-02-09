@@ -47,6 +47,28 @@ static func generate(map_seed: int = 0) -> MapData:
 	for node: MapNode in map.get_nodes_in_row(12):
 		node.node_type = Enums.MapNodeType.REST
 
+	# Add COMPANION node on rows 3-6 if party < 3 (one per map)
+	if GameManager.party.size() < 3:
+		var companion_placed: bool = false
+		for row: int in range(3, 7):
+			if companion_placed:
+				break
+			var row_nodes: Array[MapNode] = map.get_nodes_in_row(row)
+			for node: MapNode in row_nodes:
+				if node.node_type == Enums.MapNodeType.EVENT:
+					node.node_type = Enums.MapNodeType.COMPANION
+					companion_placed = true
+					break
+		# If no EVENT node was found, convert the first BATTLE in rows 3-6
+		if not companion_placed:
+			for row: int in range(3, 7):
+				if companion_placed:
+					break
+				var row_nodes: Array[MapNode] = map.get_nodes_in_row(row)
+				if row_nodes.size() > 0:
+					row_nodes[0].node_type = Enums.MapNodeType.COMPANION
+					companion_placed = true
+
 	# Generate connections between adjacent rows (no crossing constraint)
 	for row: int in range(0, 15):
 		var current_row: Array[MapNode] = map.get_nodes_in_row(row)

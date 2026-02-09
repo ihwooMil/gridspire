@@ -26,3 +26,5 @@ range_max = 5
 target_type = 2
 effects = [SubResource("effect_1")]
 rarity = 1
+element = "fire"
+element_count = 1

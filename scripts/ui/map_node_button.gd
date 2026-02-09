@@ -16,6 +16,7 @@ const NODE_COLORS: Dictionary = {
 	Enums.MapNodeType.EVENT: Color(0.6, 0.4, 0.8),
 	Enums.MapNodeType.BOSS: Color(0.9, 0.2, 0.2),
 	Enums.MapNodeType.START: Color(0.5, 0.5, 0.5),
+	Enums.MapNodeType.COMPANION: Color(0.2, 0.8, 0.6),
 }
 const NODE_ICONS: Dictionary = {
 	Enums.MapNodeType.BATTLE: "!",
@@ -25,6 +26,7 @@ const NODE_ICONS: Dictionary = {
 	Enums.MapNodeType.EVENT: "?",
 	Enums.MapNodeType.BOSS: "B",
 	Enums.MapNodeType.START: "S",
+	Enums.MapNodeType.COMPANION: "+",
 }
 
 

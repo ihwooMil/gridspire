@@ -114,6 +114,10 @@ func _on_skip() -> void:
 
 
 func _return_to_map() -> void:
+	var encounter: EncounterData = GameManager.current_encounter
 	GameManager.current_encounter = null
 	GameManager.current_floor += 1
+	# If boss was defeated, unlock next difficulty
+	if encounter and encounter.is_boss:
+		GameManager.on_run_complete()
 	GameManager.change_state(Enums.GameState.MAP)

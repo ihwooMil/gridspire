@@ -14,6 +14,8 @@ push_pull_distance = 0
 dice_count = 2
 dice_sides = 6
 dice_bonus = 0
+combo_tag = "quick"
+combo_bonus = 5
 
 [resource]
 script = ExtResource("1")

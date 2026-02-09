@@ -84,7 +84,11 @@ enum MapNodeType {
 	EVENT,
 	BOSS,
 	START,
+	COMPANION,
 }
+
+## Event subtypes for EVENT map nodes.
+enum EventType { COMPANION, REST, TREASURE, MYSTERY }
 
 ## Phases within a single character's turn in battle.
 enum TurnPhase {

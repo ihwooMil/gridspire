@@ -35,4 +35,4 @@ range_max = 1
 target_type = 2
 effects = [SubResource("effect_1"), SubResource("effect_2")]
 rarity = 0
-tags = PackedStringArray("strike")
+tags = PackedStringArray("quick", "strike")
