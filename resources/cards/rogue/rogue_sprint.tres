@@ -23,3 +23,4 @@ range_max = 0
 target_type = 0
 effects = [SubResource("effect_1")]
 rarity = 0
+tags = PackedStringArray("movement")

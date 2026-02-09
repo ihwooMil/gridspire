@@ -16,6 +16,8 @@ enum CardEffectType {
 	AREA_DEBUFF,
 	DRAW,
 	SHIELD,
+	SHIELD_STRIKE,  ## Deal damage equal to current shield stacks
+	SUMMON,         ## Summon a creature onto the grid
 }
 
 ## Who or what a card can target.
@@ -57,17 +59,31 @@ enum StatusEffect {
 	REGEN,
 	STUN,
 	ROOT,
+	BERSERK,   ## +2 damage per stack, cannot gain shield
+	EVASION,   ## 15% dodge per stack (max 75%), consumes 1 stack on dodge
 }
 
 ## High-level game states.
 enum GameState {
 	MAIN_MENU,
+	CHARACTER_SELECT,
 	MAP,
 	BATTLE,
 	REWARD,
 	SHOP,
 	EVENT,
 	GAME_OVER,
+}
+
+## Map node types for the overworld map.
+enum MapNodeType {
+	BATTLE,
+	ELITE,
+	SHOP,
+	REST,
+	EVENT,
+	BOSS,
+	START,
 }
 
 ## Phases within a single character's turn in battle.

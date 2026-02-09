@@ -94,6 +94,23 @@ func get_entry(character: CharacterData) -> TimelineEntry:
 	return null
 
 
+## Add a new character to the timeline (e.g. summons).
+func add_entry(character: CharacterData) -> void:
+	# Insert at current tick + character speed so they act next cycle
+	var entry := TimelineEntry.new(character)
+	if current_entry:
+		entry.current_tick = current_entry.current_tick + character.get_effective_speed()
+	entries.append(entry)
+	_sort()
+
+
+## Remove a specific character from the timeline.
+func remove_entry(character: CharacterData) -> void:
+	entries = entries.filter(func(e: TimelineEntry) -> bool:
+		return e.character != character
+	)
+
+
 ## Sort entries by tick value ascending (lowest acts first).
 func _sort() -> void:
 	entries.sort_custom(func(a: TimelineEntry, b: TimelineEntry) -> bool:

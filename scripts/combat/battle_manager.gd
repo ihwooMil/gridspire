@@ -38,6 +38,7 @@ func _ready() -> void:
 	_effect_resolver.healing_done.connect(_on_healing_done)
 	_effect_resolver.character_killed.connect(_on_character_killed)
 	_effect_resolver.cards_drawn_by_effect.connect(_on_cards_drawn_by_effect)
+	_effect_resolver.summon_created.connect(_on_summon_created)
 
 
 # --- Battle lifecycle ---
@@ -61,7 +62,12 @@ func start_battle(players: Array[CharacterData], enemies: Array[CharacterData]) 
 	# Initialize decks for all characters
 	DeckManager.initialize_all_decks(all_chars)
 
-	GameManager.change_state(Enums.GameState.BATTLE)
+	# Initialize runtime combat state for players
+	for ch: CharacterData in players:
+		ch.element_stacks.clear()
+		ch.cards_played_this_turn.clear()
+		ch.active_summons.clear()
+
 	battle_started.emit()
 	_next_turn()
 
@@ -109,16 +115,19 @@ func _next_turn() -> void:
 		_finish_turn(character)
 		return
 
-	if character.faction == Enums.Faction.PLAYER:
+	if character.is_summon:
+		_start_summon_turn(character)
+	elif character.faction == Enums.Faction.PLAYER:
 		_start_player_turn(character)
 	else:
 		_start_enemy_turn(character)
 
 
 func _start_player_turn(character: CharacterData) -> void:
-	max_energy = character.energy_per_turn
+	max_energy = character.get_total_energy()
 	current_energy = max_energy
 	has_moved_this_turn = false
+	character.cards_played_this_turn.clear()
 	character.tick_status_effects()
 
 	# Draw cards
@@ -180,13 +189,21 @@ func play_card(card: CardData, source: CharacterData, target: Variant) -> bool:
 	if not _is_target_in_range(card, source, target):
 		return false
 
+	# Check requires_berserk
+	if card.requires_berserk and source.get_status_stacks(Enums.StatusEffect.BERSERK) <= 0:
+		return false
+
 	current_energy -= card.energy_cost
 	hand.erase(card)
 
 	var action: CombatAction = CombatAction.create_card_action(card, source, target)
 	_resolve_action(action)
 
-	DeckManager.discard_card(source, card)
+	# Exhaust or discard
+	if card.exhaust_on_play:
+		DeckManager.exhaust_card(source, card)
+	else:
+		DeckManager.discard_card(source, card)
 	card_played.emit(card, source, target)
 	energy_changed.emit(current_energy, max_energy)
 	hand_updated.emit(hand)
@@ -249,6 +266,13 @@ func get_timeline_preview(count: int = 10) -> Array[CharacterData]:
 	return []
 
 
+## Get the raw timeline entries (for the timeline bar UI).
+func get_timeline_entries() -> Array[TimelineEntry]:
+	if _timeline:
+		return _timeline.entries
+	return []
+
+
 ## Get the currently active character.
 func get_active_character() -> CharacterData:
 	if _timeline:
@@ -265,6 +289,8 @@ func can_play_card(card: CardData, source: CharacterData, target: Variant) -> bo
 	if current_energy < card.energy_cost:
 		return false
 	if not card in hand:
+		return false
+	if card.requires_berserk and source.get_status_stacks(Enums.StatusEffect.BERSERK) <= 0:
 		return false
 	return _is_target_in_range(card, source, target)
 
@@ -451,6 +477,122 @@ func _find_ai_target(card: CardData, source: CharacterData) -> Variant:
 	return null
 
 
+# --- Summon turn ---
+
+func _start_summon_turn(character: CharacterData) -> void:
+	character.tick_status_effects()
+
+	# Summon AI: similar to enemy AI but targets enemies (ally of owner)
+	var summon_hand: Array[CardData] = DeckManager.draw_cards(character, 3)
+	var energy: int = character.energy_per_turn
+
+	# Move toward nearest enemy
+	_summon_try_move(character)
+
+	for card: CardData in summon_hand:
+		if energy < card.energy_cost:
+			continue
+		var target: Variant = _find_summon_target(card, character)
+		if target != null:
+			energy -= card.energy_cost
+			_effect_resolver.resolve_card(card, character, target)
+			card_played.emit(card, character, target)
+
+			var battle_result: String = state.check_battle_result()
+			if battle_result != "ongoing":
+				DeckManager.discard_hand(character, summon_hand)
+				_end_battle(battle_result)
+				return
+
+	DeckManager.discard_hand(character, summon_hand)
+	_finish_turn(character)
+
+
+func _summon_try_move(character: CharacterData) -> void:
+	if character.get_status_stacks(Enums.StatusEffect.ROOT) > 0:
+		return
+	var nearest: CharacterData = null
+	var nearest_dist: int = 999
+	for enemy: CharacterData in state.enemy_characters:
+		if not enemy.is_alive():
+			continue
+		var dist: int = GridManager.manhattan_distance(character.grid_position, enemy.grid_position)
+		if dist < nearest_dist:
+			nearest_dist = dist
+			nearest = enemy
+	if nearest == null or nearest_dist <= 1:
+		return
+	var reachable: Array[Vector2i] = GridManager.get_reachable_tiles(character)
+	var best_pos: Vector2i = character.grid_position
+	var best_dist: int = nearest_dist
+	for pos: Vector2i in reachable:
+		var dist: int = GridManager.manhattan_distance(pos, nearest.grid_position)
+		if dist < best_dist:
+			best_dist = dist
+			best_pos = pos
+	if best_pos != character.grid_position:
+		GridManager.move_character(character, best_pos)
+
+
+func _find_summon_target(card: CardData, source: CharacterData) -> Variant:
+	match card.target_type:
+		Enums.TargetType.SELF, Enums.TargetType.NONE:
+			return source
+		Enums.TargetType.SINGLE_ENEMY:
+			# Summons target enemies (faction ENEMY)
+			for enemy: CharacterData in state.enemy_characters:
+				if enemy.is_alive() and _in_card_range(card, source, enemy.grid_position):
+					return enemy
+			return null
+		Enums.TargetType.SINGLE_ALLY:
+			# Heal/buff owner's allies (players)
+			var best: CharacterData = null
+			var lowest_hp: int = 999
+			for ally: CharacterData in state.player_characters:
+				if ally.is_alive() and ally.current_hp < lowest_hp:
+					if _in_card_range(card, source, ally.grid_position):
+						lowest_hp = ally.current_hp
+						best = ally
+			return best
+		Enums.TargetType.ALL_ALLIES, Enums.TargetType.ALL_ENEMIES:
+			return source
+		Enums.TargetType.TILE, Enums.TargetType.AREA:
+			# Target tile near most enemies
+			var best_tile: Vector2i = source.grid_position
+			var best_count: int = 0
+			var tiles: Array[Vector2i] = GridManager.get_tiles_in_range(
+				source.grid_position, card.range_min, card.range_max
+			)
+			for tile_pos: Vector2i in tiles:
+				var count: int = 0
+				for enemy: CharacterData in state.enemy_characters:
+					if enemy.is_alive():
+						var dist: int = GridManager.manhattan_distance(tile_pos, enemy.grid_position)
+						var radius: int = 1
+						if card.effects.size() > 0:
+							radius = card.effects[0].area_radius
+						if dist <= radius:
+							count += 1
+				if count > best_count:
+					best_count = count
+					best_tile = tile_pos
+			if best_count > 0:
+				return best_tile
+			return null
+	return null
+
+
+func _on_summon_created(summon: CharacterData, owner: CharacterData) -> void:
+	# Add summon to player characters list for battle state
+	state.player_characters.append(summon)
+	# Add to timeline
+	_timeline.add_entry(summon)
+	state.timeline = _timeline.entries
+	# Initialize deck
+	DeckManager.initialize_deck(summon)
+	timeline_updated.emit()
+
+
 # --- Signal callbacks from CardEffectResolver ---
 
 func _on_damage_dealt(character: CharacterData, amount: int) -> void:
@@ -462,6 +604,12 @@ func _on_healing_done(character: CharacterData, amount: int) -> void:
 
 
 func _on_character_killed(character: CharacterData) -> void:
+	# If it's a summon, clean up owner's summon list and timeline
+	if character.is_summon and character.summon_owner:
+		character.summon_owner.active_summons.erase(character)
+		_timeline.remove_entry(character)
+		state.player_characters.erase(character)
+		timeline_updated.emit()
 	character_died.emit(character)
 
 
@@ -476,7 +624,8 @@ func _on_cards_drawn_by_effect(character: CharacterData, cards: Array[CardData])
 func _end_battle(result: String) -> void:
 	state.battle_active = false
 	battle_ended.emit(result)
+	# Scene transitions are handled by:
+	# - Win: SceneManager transitions to REWARD screen
+	# - Lose: BattleResultScreen shows defeat overlay, player clicks to go to menu
 	if result == "win":
 		GameManager.change_state(Enums.GameState.REWARD)
-	else:
-		GameManager.change_state(Enums.GameState.GAME_OVER)

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="StatUpgrade" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/stat_upgrade_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "upgrade_speed"
+upgrade_name = "Quicksilver Charm"
+description = "-10 Speed (act sooner)"
+stat_type = 4
+value = -10
+price = 125

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 0
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+dice_count = 1
+dice_sides = 4
+dice_bonus = 0
+combo_tag = "strike"
+combo_bonus = 3
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 4
+value = 2
+duration = 3
+status_effect = 5
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "rogue_envenom"
+card_name = "Envenom"
+description = "Deal 1d4 damage (+3 if Strike played). Apply 2 Poison for 3 turns."
+energy_cost = 1
+range_min = 1
+range_max = 2
+target_type = 2
+effects = [SubResource("effect_1"), SubResource("effect_2")]
+rarity = 0
+tags = PackedStringArray("poison")

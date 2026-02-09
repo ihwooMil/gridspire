@@ -15,21 +15,51 @@ extends Resource
 @export var icon: Texture2D = null
 @export var rarity: int = 0  ## 0=common, 1=uncommon, 2=rare
 
+## Combo tags for rogue chain system
+@export var tags: PackedStringArray = []
+## Element attribute ("fire","ice","lightning")
+@export var element: String = ""
+## Element stack count to add when played
+@export var element_count: int = 1
+## If true, card is exhausted (removed from battle) after play
+@export var exhaust_on_play: bool = false
+## If true, consumes all element stacks when played
+@export var consumes_stacks: bool = false
+## If true, can only be played while BERSERK is active
+@export var requires_berserk: bool = false
+
 
 func get_display_text() -> String:
 	var parts: PackedStringArray = []
 	for effect: CardEffect in effects:
+		var text: String = ""
 		match effect.effect_type:
 			Enums.CardEffectType.DAMAGE:
-				parts.append("Deal %d damage" % effect.value)
+				text = "Deal %s damage" % effect.get_dice_notation()
 			Enums.CardEffectType.HEAL:
-				parts.append("Heal %d HP" % effect.value)
+				text = "Heal %s HP" % effect.get_dice_notation()
 			Enums.CardEffectType.MOVE:
-				parts.append("Move %d tiles" % effect.value)
+				text = "Move %d tiles" % effect.value
 			Enums.CardEffectType.SHIELD:
-				parts.append("Gain %d shield" % effect.value)
+				text = "Gain %s shield" % effect.get_dice_notation()
 			Enums.CardEffectType.DRAW:
-				parts.append("Draw %d cards" % effect.value)
+				text = "Draw %d cards" % effect.value
+			Enums.CardEffectType.SHIELD_STRIKE:
+				var mult: String = ""
+				if effect.shield_damage_multiplier != 1.0:
+					mult = " (x%.1f)" % effect.shield_damage_multiplier
+				text = "Deal shield as damage%s" % mult
+			Enums.CardEffectType.SUMMON:
+				text = "Summon %s" % effect.summon_id.replace("_", " ").capitalize()
 			_:
-				parts.append(description)
+				text = description
+		if effect.scale_element != "" and effect.scale_per_stack > 0:
+			text += " (+%d/%s stack)" % [effect.scale_per_stack, effect.scale_element]
+		if effect.combo_tag != "" and effect.combo_bonus > 0:
+			text += " [Combo: %s +%d]" % [effect.combo_tag, effect.combo_bonus]
+		parts.append(text)
+	if exhaust_on_play:
+		parts.append("Exhaust")
+	if requires_berserk:
+		parts.append("Requires Berserk")
 	return "\n".join(parts)

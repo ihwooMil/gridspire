@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 12
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+dice_count = 0
+dice_sides = 0
+dice_bonus = 0
+shield_damage_multiplier = 1.5
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 5
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 1
+dice_count = 0
+dice_sides = 0
+dice_bonus = 0
+
+[resource]
+script = ExtResource("1")
+id = "warrior_aegis_charge"
+card_name = "Aegis Charge"
+description = "Deal 1.5x shield as damage and push the target 1 tile."
+energy_cost = 2
+range_min = 1
+range_max = 2
+target_type = 2
+effects = [SubResource("effect_1"), SubResource("effect_2")]
+rarity = 1

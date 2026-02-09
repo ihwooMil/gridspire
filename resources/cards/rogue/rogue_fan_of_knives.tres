@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 7
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 1
+push_pull_distance = 0
+dice_count = 1
+dice_sides = 4
+dice_bonus = 1
+combo_tag = "movement"
+combo_bonus = 2
+
+[resource]
+script = ExtResource("1")
+id = "rogue_fan_of_knives"
+card_name = "Fan of Knives"
+description = "Deal 1d4+1 area damage (+2 if Movement played)."
+energy_cost = 1
+range_min = 1
+range_max = 2
+target_type = 6
+effects = [SubResource("effect_1")]
+rarity = 0
+tags = PackedStringArray("strike")

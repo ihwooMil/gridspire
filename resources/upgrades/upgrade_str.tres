@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="StatUpgrade" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/stat_upgrade_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "upgrade_str"
+upgrade_name = "Strength Rune"
+description = "+1 Strength"
+stat_type = 1
+value = 1
+price = 100

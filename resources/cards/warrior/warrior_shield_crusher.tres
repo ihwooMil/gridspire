@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 12
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+dice_count = 0
+dice_sides = 0
+dice_bonus = 0
+shield_damage_multiplier = 2.0
+
+[resource]
+script = ExtResource("1")
+id = "warrior_shield_crusher"
+card_name = "Shield Crusher"
+description = "Deal 2x shield as damage. Exhausts."
+energy_cost = 3
+range_min = 1
+range_max = 1
+target_type = 2
+effects = [SubResource("effect_1")]
+rarity = 2
+exhaust_on_play = true

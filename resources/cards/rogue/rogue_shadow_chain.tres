@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 10
+value = 3
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 3
+value = 2
+duration = 2
+status_effect = 10
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_3"]
+script = ExtResource("2")
+effect_type = 3
+value = 1
+duration = 2
+status_effect = 2
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "rogue_shadow_chain"
+card_name = "Shadow Chain"
+description = "Draw 3 cards. Gain 2 Evasion and Haste for 2 turns. Exhaust."
+energy_cost = 1
+range_min = 0
+range_max = 0
+target_type = 0
+effects = [SubResource("effect_1"), SubResource("effect_2"), SubResource("effect_3")]
+rarity = 2
+tags = PackedStringArray("setup", "movement")
+exhaust_on_play = true
