@@ -40,12 +40,6 @@ jobs:
           mkdir -p build/web
           godot --headless --verbose --export-release "Web" build/web/index.html
 
-      - name: Add coi-serviceworker for SharedArrayBuffer
-        run: |
-          cd build/web
-          wget -q https://raw.githubusercontent.com/nicbarker/coi-serviceworker/refs/heads/main/coi-serviceworker.min.js
-          sed -i 's|<head>|<head>\n<script src="coi-serviceworker.min.js"></script>|' index.html
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
