@@ -1,9 +1,12 @@
 ## Manages the fan-shaped arc of cards at the bottom of the battle screen.
-## Cards are positioned on an arc and support click-to-select, click-to-confirm.
+## Cards are positioned on an arc. Single tap selects, drag drops.
 class_name CardHandUI
 extends Control
 
 signal card_selected(card: CardData)
+signal card_drag_started(card: CardData)
+signal card_drag_dropped(card: CardData, drop_pos: Vector2)
+signal card_drag_moved(card: CardData, screen_pos: Vector2)
 
 const CARD_UI_SCENE_PATH: String = "res://scenes/ui/card_ui.tscn"
 const ARC_RADIUS: float = 600.0
@@ -11,7 +14,6 @@ const MAX_SPREAD_ANGLE: float = 30.0  # degrees total spread
 const CARD_WIDTH: float = 120.0
 
 var card_ui_scene: PackedScene = null
-var _selected_index: int = -1
 var _card_uis: Array[CardUI] = []
 
 
@@ -54,14 +56,15 @@ func refresh_hand() -> void:
 		var can_play: bool = card.energy_cost <= energy
 		card_ui.setup(card, can_play)
 		card_ui.card_clicked.connect(_on_card_clicked)
+		card_ui.card_drag_started.connect(_on_card_drag_started)
+		card_ui.card_drag_ended.connect(_on_card_drag_ended)
+		card_ui.card_drag_moved.connect(_on_card_drag_moved)
 		_card_uis.append(card_ui)
 
-	_selected_index = -1
 	_layout_cards()
 
 
 func clear_hand() -> void:
-	_selected_index = -1
 	_card_uis.clear()
 	for child: Node in get_children():
 		child.queue_free()
@@ -72,8 +75,17 @@ func _layout_cards() -> void:
 	if count == 0:
 		return
 
+	# Use viewport size as fallback when control size is not yet resolved
+	var width: float = size.x
+	if width <= 0.0:
+		width = get_viewport_rect().size.x
+
+	var height: float = size.y
+	if height <= 0.0:
+		height = 180.0
+
 	# Arc center is below the bottom-center of this control
-	var arc_center := Vector2(size.x / 2.0, size.y + ARC_RADIUS - 80.0)
+	var arc_center := Vector2(width / 2.0, height + ARC_RADIUS - 80.0)
 
 	# Calculate angle per card, clamped to max spread
 	var angle_per_card: float = 5.0  # degrees between cards
@@ -82,15 +94,6 @@ func _layout_cards() -> void:
 
 	for i: int in count:
 		var card_ui: CardUI = _card_uis[i]
-
-		if i == _selected_index:
-			# Selected card: centered, scaled up, no rotation
-			card_ui.position = Vector2(size.x / 2.0 - CARD_WIDTH / 2.0, -20.0)
-			card_ui.rotation = 0.0
-			card_ui.scale = Vector2(1.3, 1.3)
-			card_ui.z_index = 20
-			card_ui.pivot_offset = card_ui.size / 2.0
-			continue
 
 		# Calculate angle for this card (in radians)
 		var card_angle_deg: float = start_angle + (total_angle * i / maxi(count - 1, 1))
@@ -107,47 +110,27 @@ func _layout_cards() -> void:
 		card_ui.scale = Vector2.ONE
 		card_ui.z_index = i
 
+		# Store home transform for snap-back
+		card_ui.set_home(card_ui.position, card_ui.rotation, card_ui.scale)
+
 
 func _on_card_clicked(card: CardData) -> void:
-	var clicked_index: int = -1
-	for i: int in _card_uis.size():
-		if _card_uis[i].card_data == card:
-			clicked_index = i
-			break
-
-	if clicked_index < 0:
-		return
-
-	if _selected_index == clicked_index:
-		# Second click on same card: confirm selection
-		card_selected.emit(card)
-		_deselect()
-	else:
-		# First click: select this card
-		_selected_index = clicked_index
-		_layout_cards()
+	# Single tap immediately confirms selection
+	card_selected.emit(card)
 
 
-func _deselect() -> void:
-	if _selected_index >= 0:
-		_selected_index = -1
-		_layout_cards()
+func _on_card_drag_started(card: CardData) -> void:
+	card_drag_started.emit(card)
 
 
-func _input(event: InputEvent) -> void:
-	if _selected_index < 0:
-		return
+func _on_card_drag_ended(card: CardData, drop_pos: Vector2) -> void:
+	card_drag_dropped.emit(card, drop_pos)
+	# Re-layout to ensure all cards return to position
+	_layout_cards()
 
-	if event is InputEventKey:
-		var key: InputEventKey = event
-		if key.pressed and key.keycode == KEY_ESCAPE:
-			_deselect()
-			get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton:
-		var mb: InputEventMouseButton = event
-		if mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
-			_deselect()
-			get_viewport().set_input_as_handled()
+
+func _on_card_drag_moved(card: CardData, screen_pos: Vector2) -> void:
+	card_drag_moved.emit(card, screen_pos)
 
 
 func update_playability() -> void:

@@ -13,14 +13,18 @@ extends Control
 @onready var discard_count_label: Label = %DiscardCountLabel
 
 signal targeting_requested(card: CardData, source: CharacterData)
+signal drag_drop_requested(card: CardData, source: CharacterData, drop_pos: Vector2)
+signal drag_hover_updated(screen_pos: Vector2)
 
 var _active_character: CharacterData = null
-var _dragging_card: CardData = null
 
 
 func _ready() -> void:
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	card_hand.card_selected.connect(_on_card_selected)
+	card_hand.card_drag_started.connect(_on_card_drag_started)
+	card_hand.card_drag_dropped.connect(_on_card_drag_dropped)
+	card_hand.card_drag_moved.connect(_on_card_drag_moved)
 
 	BattleManager.turn_started.connect(_on_turn_started)
 	BattleManager.turn_ended.connect(_on_turn_ended)
@@ -87,6 +91,21 @@ func _on_card_selected(card: CardData) -> void:
 			targeting_requested.emit(card, _active_character)
 
 
+func _on_card_drag_started(card: CardData) -> void:
+	if _active_character and _active_character.faction == Enums.Faction.PLAYER:
+		targeting_requested.emit(card, _active_character)
+
+
+func _on_card_drag_dropped(card: CardData, drop_pos: Vector2) -> void:
+	if _active_character == null or _active_character.faction != Enums.Faction.PLAYER:
+		return
+	drag_drop_requested.emit(card, _active_character, drop_pos)
+
+
+func _on_card_drag_moved(_card: CardData, screen_pos: Vector2) -> void:
+	drag_hover_updated.emit(screen_pos)
+
+
 func _on_end_turn_pressed() -> void:
 	BattleManager.end_turn()
 
@@ -99,36 +118,7 @@ func _on_energy_changed(current: int, _max_energy: int) -> void:
 
 func _on_hand_updated(_hand: Array[CardData]) -> void:
 	card_hand.refresh_hand()
-	_connect_card_drag_signals()
 	_update_pile_counts()
-
-
-func _connect_card_drag_signals() -> void:
-	for child: Node in card_hand.get_children():
-		if child is CardUI:
-			var card_ui: CardUI = child
-			if not card_ui.card_drag_started.is_connected(_on_card_drag_started):
-				card_ui.card_drag_started.connect(_on_card_drag_started)
-			if not card_ui.card_drag_ended.is_connected(_on_card_drag_ended):
-				card_ui.card_drag_ended.connect(_on_card_drag_ended)
-
-
-func _on_card_drag_started(card: CardData) -> void:
-	_dragging_card = card
-	if _active_character and _active_character.faction == Enums.Faction.PLAYER:
-		targeting_requested.emit(card, _active_character)
-
-
-func _on_card_drag_ended(card: CardData) -> void:
-	_dragging_card = null
-	if _active_character == null or _active_character.faction != Enums.Faction.PLAYER:
-		return
-	# Auto-target cards: play immediately on drop
-	match card.target_type:
-		Enums.TargetType.SELF, Enums.TargetType.NONE, Enums.TargetType.ALL_ALLIES, Enums.TargetType.ALL_ENEMIES:
-			var targets: Array = BattleManager.get_valid_targets(card, _active_character)
-			if not targets.is_empty():
-				BattleManager.play_card(card, _active_character, targets[0])
 
 
 func _update_energy_display() -> void:

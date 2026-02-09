@@ -7,7 +7,8 @@ signal card_clicked(card_data: CardData)
 signal card_hovered(card_data: CardData)
 signal card_unhovered(card_data: CardData)
 signal card_drag_started(card_data: CardData)
-signal card_drag_ended(card_data: CardData)
+signal card_drag_ended(card_data: CardData, drop_pos: Vector2)
+signal card_drag_moved(card_data: CardData, screen_pos: Vector2)
 
 @onready var name_label: Label = %NameLabel
 @onready var cost_label: Label = %CostLabel
@@ -23,6 +24,11 @@ var _is_hovered: bool = false
 var _is_dragging: bool = false
 var _press_position: Vector2 = Vector2.ZERO
 var _drag_offset: Vector2 = Vector2.ZERO
+
+## Home position set by layout — used for snap-back after drag
+var _home_position: Vector2 = Vector2.ZERO
+var _home_rotation: float = 0.0
+var _home_scale: Vector2 = Vector2.ONE
 
 const DRAG_THRESHOLD: float = 10.0
 
@@ -65,6 +71,13 @@ func set_playable(is_playable: bool) -> void:
 	_update_playable_visual()
 
 
+## Store the home transform so the card can snap back after drag.
+func set_home(pos: Vector2, rot: float, scl: Vector2) -> void:
+	_home_position = pos
+	_home_rotation = rot
+	_home_scale = scl
+
+
 func _update_playable_visual() -> void:
 	if playable:
 		modulate = Color.WHITE
@@ -104,8 +117,10 @@ func _on_gui_input(event: InputEvent) -> void:
 			else:
 				# Mouse released
 				if _is_dragging:
+					var drop_pos: Vector2 = mb.global_position
 					_is_dragging = false
-					card_drag_ended.emit(card_data)
+					card_drag_ended.emit(card_data, drop_pos)
+					_snap_to_home()
 				else:
 					# No drag occurred, treat as click
 					if playable and card_data:
@@ -122,3 +137,14 @@ func _on_gui_input(event: InputEvent) -> void:
 					card_drag_started.emit(card_data)
 			if _is_dragging:
 				global_position = mm.global_position + _drag_offset
+				card_drag_moved.emit(card_data, mm.global_position)
+
+
+## Tween back to the home position after a drag ends.
+func _snap_to_home() -> void:
+	var tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.set_parallel(true)
+	tween.tween_property(self, "position", _home_position, 0.2)
+	tween.tween_property(self, "rotation", _home_rotation, 0.2)
+	tween.tween_property(self, "scale", _home_scale, 0.2)
+	z_index = 0

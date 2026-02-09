@@ -596,6 +596,15 @@ func clear_all_highlights() -> void:
 	queue_redraw()
 
 
+## Update the hovered tile during a card drag (screen-space position).
+func update_drag_hover(screen_pos: Vector2) -> void:
+	var local_pos: Vector2 = to_local(screen_pos)
+	var grid_pos: Vector2i = GridManager.world_to_grid(local_pos)
+	if grid_pos != hovered_tile:
+		hovered_tile = grid_pos
+		queue_redraw()
+
+
 ## Enter card targeting mode: show attack range and wait for target click.
 func enter_targeting_mode(card: CardData, source: CharacterData) -> void:
 	deselect_character()

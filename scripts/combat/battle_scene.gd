@@ -15,6 +15,8 @@ func _ready() -> void:
 
 	# Wire up card targeting
 	battle_hud.targeting_requested.connect(_on_targeting_requested)
+	battle_hud.drag_drop_requested.connect(_on_drag_drop)
+	battle_hud.drag_hover_updated.connect(_on_drag_hover)
 	grid_container.target_selected.connect(_on_target_selected)
 
 	# Start the battle from encounter data
@@ -220,6 +222,53 @@ func _on_targeting_requested(card: CardData, source: CharacterData) -> void:
 
 func _on_target_selected(card: CardData, source: CharacterData, target: Variant) -> void:
 	BattleManager.play_card(card, source, target)
+
+
+func _on_drag_drop(card: CardData, source: CharacterData, drop_pos: Vector2) -> void:
+	grid_container.exit_targeting_mode()
+
+	# Convert screen position to grid local, then to grid coordinates
+	var local_pos: Vector2 = grid_container.to_local(drop_pos)
+	var grid_pos: Vector2i = GridManager.world_to_grid(local_pos)
+
+	# Auto-target cards: play immediately regardless of drop position
+	match card.target_type:
+		Enums.TargetType.SELF, Enums.TargetType.NONE, Enums.TargetType.ALL_ALLIES, Enums.TargetType.ALL_ENEMIES:
+			var targets: Array = BattleManager.get_valid_targets(card, source)
+			if not targets.is_empty():
+				BattleManager.play_card(card, source, targets[0])
+			return
+
+	# Manual target cards: check if drop landed on a valid target
+	if not GridManager.grid.has(grid_pos):
+		return
+
+	# Check range
+	var in_range_tiles: Array[Vector2i] = GridManager.get_tiles_in_range(
+		source.grid_position, card.range_min, card.range_max
+	)
+	if grid_pos not in in_range_tiles:
+		return
+
+	var tile: GridTile = GridManager.get_tile(grid_pos)
+	var target: Variant = null
+
+	match card.target_type:
+		Enums.TargetType.SINGLE_ENEMY:
+			if tile and tile.occupant and tile.occupant.faction == Enums.Faction.ENEMY and tile.occupant.is_alive():
+				target = tile.occupant
+		Enums.TargetType.SINGLE_ALLY:
+			if tile and tile.occupant and tile.occupant.faction == Enums.Faction.PLAYER and tile.occupant.is_alive():
+				target = tile.occupant
+		Enums.TargetType.TILE, Enums.TargetType.AREA:
+			target = grid_pos
+
+	if target != null:
+		BattleManager.play_card(card, source, target)
+
+
+func _on_drag_hover(screen_pos: Vector2) -> void:
+	grid_container.update_drag_hover(screen_pos)
 
 
 func _spawn_damage_popup(character: CharacterData, amount: int, is_damage: bool) -> void:
