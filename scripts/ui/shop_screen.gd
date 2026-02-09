@@ -1,6 +1,8 @@
 ## Shop screen — buy cards and remove cards from decks.
 extends Control
 
+const CardRegistry = preload("res://scripts/core/card_registry.gd")
+
 @onready var gold_label: Label = %ShopGoldLabel
 @onready var buy_container: HBoxContainer = %BuyContainer
 @onready var remove_tabs: HBoxContainer = %RemoveTabs
@@ -16,12 +18,7 @@ const RARITY_PRICES: Dictionary = {
 	2: 150,  # Rare
 }
 const REMOVE_COST: int = 75
-const ALL_CARD_PATHS: Array = [
-	"res://resources/cards/warrior/",
-	"res://resources/cards/mage/",
-	"res://resources/cards/rogue/",
-]
-const UPGRADE_PATH: String = "res://resources/upgrades/"
+
 var _upgrade_offers: Array[Dictionary] = []  # [{upgrade: StatUpgrade, price: int}]
 
 
@@ -43,20 +40,8 @@ func _update_gold_display(_amount: int) -> void:
 
 func _generate_shop_inventory() -> void:
 	_shop_cards.clear()
-	var all_cards: Array[CardData] = []
-
-	for card_path: String in ALL_CARD_PATHS:
-		var dir := DirAccess.open(card_path)
-		if dir:
-			dir.list_dir_begin()
-			var file_name: String = dir.get_next()
-			while file_name != "":
-				if file_name.ends_with(".tres"):
-					var card: CardData = load(card_path + file_name) as CardData
-					if card:
-						all_cards.append(card)
-				file_name = dir.get_next()
-			dir.list_dir_end()
+	# Load all cards from static registry (web build compatible)
+	var all_cards: Array[CardData] = CardRegistry.get_all_player_cards()
 
 	all_cards.shuffle()
 
@@ -194,18 +179,8 @@ func _on_remove_card(card: CardData) -> void:
 
 func _generate_upgrade_offers() -> void:
 	_upgrade_offers.clear()
-	var all_upgrades: Array[StatUpgrade] = []
-	var dir := DirAccess.open(UPGRADE_PATH)
-	if dir:
-		dir.list_dir_begin()
-		var file_name: String = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var upgrade: StatUpgrade = load(UPGRADE_PATH + file_name) as StatUpgrade
-				if upgrade:
-					all_upgrades.append(upgrade)
-			file_name = dir.get_next()
-		dir.list_dir_end()
+	# Load upgrades from static registry (web build compatible)
+	var all_upgrades: Array[StatUpgrade] = CardRegistry.get_upgrades()
 
 	all_upgrades.shuffle()
 	for i: int in mini(3, all_upgrades.size()):

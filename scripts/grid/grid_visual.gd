@@ -220,11 +220,11 @@ func _create_animated_sprite(sheets: Dictionary) -> AnimatedSprite2D:
 	var anim_sprite := AnimatedSprite2D.new()
 	anim_sprite.sprite_frames = frames
 	anim_sprite.centered = true
-	# Scale to fit tile size
-	var scale_factor: float = GridManager.tile_size.x / float(ref_frame_w) * 0.9
+	# Scale based on tile height so character stands on top of tile
+	var scale_factor: float = GridManager.tile_size.y / float(ref_frame_h) * 1.6
 	anim_sprite.scale = Vector2(scale_factor, scale_factor)
-	# Offset up slightly so feet align with tile center
-	anim_sprite.offset = Vector2(0, -ref_frame_h * 0.15)
+	# Offset upward so character appears to stand on the tile surface
+	anim_sprite.offset = Vector2(0, -ref_frame_h * 0.35)
 
 	return anim_sprite
 
@@ -390,14 +390,18 @@ func _draw_characters() -> void:
 		var center: Vector2 = sprite.position
 		var half: Vector2 = ts * 0.4
 		var has_sprite_sheet: bool = sprite_sheets.has(character.character_name)
+		# Standing offset — characters appear above the tile center
+		var stand_offset := Vector2(0, -ts.y * 0.3)
 
 		if not has_sprite_sheet:
+			var draw_center: Vector2 = center + stand_offset
 			# Draw circle placeholder for characters without sprite sheets
 			var body_color: Color = _get_faction_color(character.faction)
 			if character == selected_character:
 				body_color = body_color.lightened(0.3)
-			draw_circle(center, half.x * 0.7, body_color)
-			draw_arc(center, half.x * 0.7, 0, TAU, 32, body_color.lightened(0.2), 2.0)
+			var radius: float = minf(half.x, half.y) * 0.7
+			draw_circle(draw_center, radius, body_color)
+			draw_arc(draw_center, radius, 0, TAU, 32, body_color.lightened(0.2), 2.0)
 
 			# Character initial
 			var font: Font = ThemeDB.fallback_font
@@ -406,7 +410,7 @@ func _draw_characters() -> void:
 			var text_size: Vector2 = font.get_string_size(ch_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 			draw_string(
 				font,
-				center + Vector2(-text_size.x * 0.5, text_size.y * 0.3),
+				draw_center + Vector2(-text_size.x * 0.5, text_size.y * 0.3),
 				ch_text,
 				HORIZONTAL_ALIGNMENT_LEFT,
 				-1,
@@ -416,12 +420,12 @@ func _draw_characters() -> void:
 
 		# Selection highlight for sprite-sheet characters
 		if has_sprite_sheet and character == selected_character:
-			draw_arc(center, half.x * 0.85, 0, TAU, 32, Color(1.0, 1.0, 0.3, 0.6), 2.0)
+			draw_arc(center + stand_offset, minf(half.x, half.y) * 0.85, 0, TAU, 32, Color(1.0, 1.0, 0.3, 0.6), 2.0)
 
-		# HP bar (always drawn for all characters)
+		# HP bar at tile bottom area
 		var bar_width: float = ts.x * 0.7
 		var bar_height: float = 4.0
-		var bar_y_offset: float = half.y * 0.8 if not has_sprite_sheet else half.y * 1.0
+		var bar_y_offset: float = ts.y * 0.35
 		var bar_start: Vector2 = center + Vector2(-bar_width * 0.5, bar_y_offset)
 		var bg_rect := Rect2(bar_start, Vector2(bar_width, bar_height))
 		draw_rect(bg_rect, COLOR_HP_BAR_BG, true)

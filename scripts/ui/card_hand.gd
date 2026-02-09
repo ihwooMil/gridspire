@@ -12,15 +12,19 @@ const CARD_UI_SCENE_PATH: String = "res://scenes/ui/card_ui.tscn"
 const ARC_RADIUS: float = 600.0
 const MAX_SPREAD_ANGLE: float = 30.0  # degrees total spread
 const CARD_WIDTH: float = 120.0
+const CARD_HEIGHT: float = 170.0
+## Draw animation origin (local coords, pointing toward CharInfo at bottom-left)
+const DRAW_ORIGIN := Vector2(-130.0, -30.0)
 
 var card_ui_scene: PackedScene = null
 var _card_uis: Array[CardUI] = []
+## Track last known positions of cards for discard animation
+var _last_card_positions: Dictionary = {}
 
 
 func _ready() -> void:
 	card_ui_scene = load(CARD_UI_SCENE_PATH)
 	BattleManager.turn_started.connect(_on_turn_started)
-	BattleManager.card_played.connect(_on_card_played)
 	BattleManager.turn_ended.connect(_on_turn_ended)
 	BattleManager.battle_ended.connect(_on_battle_ended)
 
@@ -30,11 +34,7 @@ func _on_turn_started(character: CharacterData) -> void:
 		clear_hand()
 		return
 	await get_tree().process_frame
-	refresh_hand()
-
-
-func _on_card_played(_card: CardData, _source: CharacterData, _target: Variant) -> void:
-	refresh_hand()
+	refresh_hand(true)
 
 
 func _on_turn_ended(_character: CharacterData) -> void:
@@ -45,7 +45,7 @@ func _on_battle_ended(_result: String) -> void:
 	clear_hand()
 
 
-func refresh_hand() -> void:
+func refresh_hand(animate_draw: bool = false) -> void:
 	clear_hand()
 	var hand: Array[CardData] = BattleManager.hand
 	var energy: int = BattleManager.current_energy
@@ -63,8 +63,15 @@ func refresh_hand() -> void:
 
 	_layout_cards()
 
+	if animate_draw and not _card_uis.is_empty():
+		_animate_draw()
+
 
 func clear_hand() -> void:
+	# Save last known positions before clearing
+	for card_ui: CardUI in _card_uis:
+		if card_ui.card_data:
+			_last_card_positions[card_ui.card_data] = card_ui.position
 	_card_uis.clear()
 	for child: Node in get_children():
 		child.queue_free()
@@ -104,14 +111,48 @@ func _layout_cards() -> void:
 			arc_center.y + ARC_RADIUS * sin(card_angle_rad)
 		)
 
-		card_ui.pivot_offset = Vector2(CARD_WIDTH / 2.0, card_ui.size.y)
-		card_ui.position = Vector2(pos.x - CARD_WIDTH / 2.0, pos.y - card_ui.size.y)
+		card_ui.pivot_offset = Vector2(CARD_WIDTH / 2.0, CARD_HEIGHT)
+		card_ui.position = Vector2(pos.x - CARD_WIDTH / 2.0, pos.y - CARD_HEIGHT)
 		card_ui.rotation = deg_to_rad(card_angle_deg)
 		card_ui.scale = Vector2.ONE
 		card_ui.z_index = i
 
 		# Store home transform for snap-back
 		card_ui.set_home(card_ui.position, card_ui.rotation, card_ui.scale)
+
+		# Track position for discard animation
+		if card_ui.card_data:
+			_last_card_positions[card_ui.card_data] = card_ui.position
+
+
+func _animate_draw() -> void:
+	for i: int in _card_uis.size():
+		var card_ui: CardUI = _card_uis[i]
+		var target_pos: Vector2 = card_ui.position
+		var target_rot: float = card_ui.rotation
+		var target_scale: Vector2 = card_ui.scale
+
+		# Start from draw origin (CharInfo direction)
+		card_ui.position = DRAW_ORIGIN
+		card_ui.rotation = 0.0
+		card_ui.scale = Vector2(0.3, 0.3)
+		card_ui.modulate.a = 0.0
+
+		var delay: float = i * 0.1
+		var tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		tween.set_parallel(true)
+		tween.tween_property(card_ui, "position", target_pos, 0.35).set_delay(delay)
+		tween.tween_property(card_ui, "rotation", target_rot, 0.35).set_delay(delay)
+		tween.tween_property(card_ui, "scale", target_scale, 0.35).set_delay(delay)
+		tween.tween_property(card_ui, "modulate:a", 1.0, 0.2).set_delay(delay)
+
+
+## Get the last known position of a card (for discard animation).
+func get_last_card_position(card: CardData) -> Vector2:
+	if _last_card_positions.has(card):
+		return _last_card_positions[card]
+	# Fallback: center of card hand area
+	return Vector2(size.x / 2.0, size.y / 2.0) + global_position - get_parent().global_position
 
 
 func _on_card_clicked(card: CardData) -> void:
@@ -125,8 +166,6 @@ func _on_card_drag_started(card: CardData) -> void:
 
 func _on_card_drag_ended(card: CardData, drop_pos: Vector2) -> void:
 	card_drag_dropped.emit(card, drop_pos)
-	# Re-layout to ensure all cards return to position
-	_layout_cards()
 
 
 func _on_card_drag_moved(card: CardData, screen_pos: Vector2) -> void:

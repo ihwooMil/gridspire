@@ -51,16 +51,17 @@ Main (Node2D) ─── scripts/core/main.gd
 ├── UI (CanvasLayer)
 │   ├── BattleHUD (Control, mouse_filter=IGNORE) ─── battle_hud.gd
 │   │   ├── TopBar (HBoxContainer, mouse_filter=IGNORE)
-│   │   │   ├── %BattleTurnLabel
-│   │   │   ├── %BattleEnergyLabel
-│   │   │   ├── %DrawCountLabel
-│   │   │   └── %DiscardCountLabel
-│   │   ├── %CharacterInfo (PanelContainer) ─── character_info.gd
-│   │   │   └── HP바, 에너지, 상태이상 뱃지
-│   │   ├── %CardHand (HBoxContainer, mouse_filter=IGNORE) ─── card_hand.gd
+│   │   │   └── %BattleTurnLabel (160px)
+│   │   ├── %TimelineBar (Control, layout_mode=1) ─── timeline_bar.gd
+│   │   │   └── 상단 바 우측, TurnLabel 옆에 배치
+│   │   ├── %CharacterInfo (PanelContainer, 좌하단) ─── character_info.gd
+│   │   │   └── 이름, HP바, 에너지, 드로우/무덤 카운트, 상태이상 뱃지
+│   │   ├── %CardHand (Control, 하단 중앙, mouse_filter=IGNORE) ─── card_hand.gd
 │   │   │   └── [CardUI 인스턴스들] (PanelContainer, mouse_filter=STOP)
-│   │   ├── %TimelineBar (VBoxContainer, mouse_filter=IGNORE) ─── timeline_bar.gd
-│   │   └── %EndTurnButton (Button)
+│   │   ├── %EndTurnButton (Button, 우측 중앙)
+│   │   ├── %GraveyardButton (Button, 우측, EndTurn 아래)
+│   │   └── %GraveyardPopup (PanelContainer, 화면 중앙 600×400, hidden)
+│   │       └── VBox > Header(Title+CloseButton) + ScrollContainer > GridContainer(4열)
 │   └── BattleResult (Control) ─── battle_result.gd
 └── GridContainer (Node2D) ─── grid_visual.gd
     └── [Character sprite Node2D들]
@@ -83,7 +84,7 @@ GridVisual은 `_unhandled_input()`으로 UI가 처리하지 않은 마우스 이
 ```
 GridManager (Autoload)
 ├── grid: Dictionary[Vector2i, GridTile]
-├── tile_size: Vector2 = (64, 64)
+├── tile_size: Vector2 = (116, 58)  ← 2:1 비율, battle_scene.gd에서 동적 계산
 ├── grid_width / grid_height: int
 │
 ├── 타일 관리
@@ -228,7 +229,45 @@ base_damage = effect.value
         └── [우클릭] → 타겟팅 취소
 ```
 
-### 6. 덱 관리
+### 6. 카드 레지스트리
+
+```
+CardRegistry (static class)
+│
+├── CLASS_CARDS: Dictionary
+│   ├── "warrior": Array[String]  (32 card paths)
+│   ├── "mage": Array[String]     (33 card paths)
+│   └── "rogue": Array[String]    (28 card paths)
+│
+├── UPGRADES: Array[String]       (7 upgrade paths)
+│
+├── get_class_cards(class_id) → Array[CardData]
+│   └── 직업별 카드 로딩 (load() 사용, 웹 빌드 호환)
+│
+├── get_all_player_cards() → Array[CardData]
+│   └── 전체 플레이어 카드풀 (상점용)
+│
+└── get_upgrades() → Array[StatUpgrade]
+    └── 전체 스탯 업그레이드 목록
+```
+
+**설계 근거**: Godot Web 내보내기에서 `DirAccess.open("res://...")`은
+PCK 패킹된 파일시스템을 열거할 수 없어 `null`을 반환한다.
+정적 경로 딕셔너리와 `load(path)`를 사용하여 모든 플랫폼에서 동작하도록 한다.
+
+**보상 흐름**:
+```
+전투 승리 → REWARD state → RewardScreen
+    │
+    ├── CardRegistry.get_class_cards(class_prefix)
+    ├── 레어리티 가중치 적용 (Common 3x, Uncommon 2x, Rare 1x)
+    ├── 3장 고유 카드 선택지 표시
+    │
+    ├── [카드 선택] → DeckManager.add_card_to_deck()
+    └── [Skip] → 카드 미추가 → MAP state
+```
+
+### 7. 덱 관리
 
 ```
 DeckManager (Autoload)
@@ -247,6 +286,10 @@ DeckManager (Autoload)
 ├── discard_card(character, card)
 ├── discard_hand(character, hand)
 ├── exhaust_card(character, card)  ← 영구 제거 (전투 내)
+│
+├── get_draw_count(character) → int
+├── get_discard_count(character) → int
+├── get_discard_pile(character) → Array[CardData]  ← 무덤 팝업 표시용
 │
 └── 영구 덱 수정 (보상/상점)
     ├── add_card_to_deck(character, card)
@@ -412,6 +455,7 @@ gridspire/
 │   │   ├── grid_tile_resource.gd 타일 데이터
 │   │   ├── timeline_entry.gd     타임라인 엔트리
 │   │   ├── battle_state.gd       전투 상태
+│   │   ├── card_registry.gd      정적 카드/업그레이드 레지스트리
 │   │   ├── game_manager.gd       [Autoload] 전역 게임 상태
 │   │   └── main.gd               메인 씬 스크립트
 │   ├── grid/
@@ -432,7 +476,10 @@ gridspire/
 │   │   ├── timeline_bar.gd       타임라인 바
 │   │   ├── damage_popup.gd       데미지 팝업
 │   │   ├── title_screen.gd       타이틀 화면
-│   │   └── battle_result.gd      전투 결과
+│   │   ├── battle_result.gd      전투 결과
+│   │   ├── reward_screen.gd     보상 화면 (CardRegistry 사용)
+│   │   ├── shop_screen.gd       상점 화면 (CardRegistry 사용)
+│   │   └── event_screen.gd      이벤트 화면 (CardRegistry 사용)
 │   └── tests/
 │       ├── test_runner.gd        테스트 러너 (~150 assertions)
 │       ├── test_timeline_system.gd  타임라인 테스트
@@ -460,3 +507,5 @@ gridspire/
 | 2026-02-09 | QA 테스트 작성, 버그 3건 수정 |
 | 2026-02-09 | get_path → get_grid_path 이름 충돌 수정 |
 | 2026-02-09 | mouse_filter 수정, 카드 타겟팅 시스템 추가 |
+| 2026-02-09 | CardRegistry 추가, DirAccess→정적 레지스트리 전환 (웹 빌드 호환) |
+| 2026-02-09 | 전투 UI 전면 개편: 타임라인 바 visibility 수정, 2:1 타일 비율, 좌하단 캐릭터 정보 (에너지/드로우/무덤 통합), 우측 턴 종료/무덤 버튼, 카드 드로우/버리기 애니메이션, 무덤 팝업, 상단 2줄 벽 타일, 캐릭터 standing 오프셋 |

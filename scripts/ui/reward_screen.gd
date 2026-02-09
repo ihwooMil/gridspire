@@ -2,6 +2,8 @@
 ## Displays gold earned and 3 card offers for the selected character.
 extends Control
 
+const CardRegistry = preload("res://scripts/core/card_registry.gd")
+
 @onready var title_label: Label = %TitleLabel
 @onready var gold_label: Label = %GoldRewardLabel
 @onready var character_tabs: HBoxContainer = %CharacterTabs
@@ -11,13 +13,6 @@ extends Control
 var _selected_character: CharacterData = null
 var _card_offers: Array[CardData] = []
 var _gold_awarded: bool = false
-
-## Card pool paths per character class prefix
-const CLASS_CARD_PATHS: Dictionary = {
-	"warrior": "res://resources/cards/warrior/",
-	"mage": "res://resources/cards/mage/",
-	"rogue": "res://resources/cards/rogue/",
-}
 
 
 func _ready() -> void:
@@ -65,21 +60,9 @@ func _select_character(character: CharacterData) -> void:
 func _generate_card_offers(character: CharacterData) -> void:
 	_card_offers.clear()
 	var class_prefix: String = character.id.split("_")[0] if "_" in character.id else character.id
-	var card_path: String = CLASS_CARD_PATHS.get(class_prefix, "res://resources/cards/warrior/")
 
-	# Load all cards from the class directory
-	var all_cards: Array[CardData] = []
-	var dir := DirAccess.open(card_path)
-	if dir:
-		dir.list_dir_begin()
-		var file_name: String = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var card: CardData = load(card_path + file_name) as CardData
-				if card:
-					all_cards.append(card)
-			file_name = dir.get_next()
-		dir.list_dir_end()
+	# Load all cards from static registry (web build compatible)
+	var all_cards: Array[CardData] = CardRegistry.get_class_cards(class_prefix)
 
 	# Shuffle and pick 3 (weighted by rarity — common more likely)
 	all_cards.shuffle()

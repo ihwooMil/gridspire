@@ -1,4 +1,4 @@
-## Displays character info: name, HP bar, energy, and active status effects.
+## Displays character info: name, HP bar, energy, draw/discard counts, and active status effects.
 class_name CharacterInfoPanel
 extends PanelContainer
 
@@ -6,6 +6,8 @@ extends PanelContainer
 @onready var hp_bar: ProgressBar = %HPBar
 @onready var hp_label: Label = %HPLabel
 @onready var energy_label: Label = %EnergyLabel
+@onready var draw_count_label: Label = %DrawCountLabel
+@onready var discard_count_label: Label = %DiscardCountLabel
 @onready var status_container: HBoxContainer = %StatusContainer
 
 var tracked_character: CharacterData = null
@@ -38,6 +40,8 @@ const STATUS_NAMES: Dictionary = {
 func _ready() -> void:
 	BattleManager.character_damaged.connect(_on_character_changed)
 	BattleManager.character_healed.connect(_on_character_changed)
+	BattleManager.energy_changed.connect(_on_energy_changed)
+	BattleManager.hand_updated.connect(_on_hand_updated)
 	BattleManager.card_played.connect(func(_c: CardData, _s: CharacterData, _t: Variant) -> void: refresh())
 
 
@@ -58,7 +62,11 @@ func refresh() -> void:
 	if hp_label:
 		hp_label.text = "%d / %d" % [tracked_character.current_hp, tracked_character.max_hp]
 	if energy_label:
-		energy_label.text = "Energy: %d" % BattleManager.current_energy
+		energy_label.text = "Energy: %d / %d" % [BattleManager.current_energy, BattleManager.max_energy]
+	if draw_count_label:
+		draw_count_label.text = "Draw: %d" % DeckManager.get_draw_count(tracked_character)
+	if discard_count_label:
+		discard_count_label.text = "Discard: %d" % DeckManager.get_discard_count(tracked_character)
 
 	_refresh_status_effects()
 
@@ -82,3 +90,11 @@ func _refresh_status_effects() -> void:
 func _on_character_changed(character: CharacterData, _amount: int) -> void:
 	if character == tracked_character:
 		refresh()
+
+
+func _on_energy_changed(_current: int, _max_energy: int) -> void:
+	refresh()
+
+
+func _on_hand_updated(_hand: Array[CardData]) -> void:
+	refresh()

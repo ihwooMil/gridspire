@@ -185,6 +185,7 @@ Per-character draw/discard/exhaust pile management.
 - `exhaust_card(character, card)` - Remove from battle
 - `add_card_to_deck(character, card)` / `remove_card_from_deck(character, card)` - Permanent deck modification
 - `get_draw_count(character)` / `get_discard_count(character)` - Pile sizes
+- `get_discard_pile(character)` - Get copy of discard pile (for graveyard popup)
 
 ---
 
@@ -211,6 +212,10 @@ Per-character draw/discard/exhaust pile management.
 ## Grid System
 
 - Rectangular grid, default 10x8 tiles
+- **Tile ratio**: 2:1 (default 116×58), dynamically calculated in battle_scene.gd
+- **Top 2 rows**: Decorative wall tiles for depth effect
+- **Characters stand on tiles**: Sprite offset applied for standing-on-tile visual
+- **Grid centered**: Automatically centered horizontally based on available screen area
 - Manhattan distance for range calculations
 - BFS pathfinding for movement (respects walls, occupied tiles)
 - Push/pull uses dominant axis direction
@@ -238,16 +243,18 @@ Main (Node2D) ─── scripts/core/main.gd
 ├── UI (CanvasLayer)
 │   ├── BattleHUD (Control, mouse_filter=IGNORE) ─── battle_hud.gd
 │   │   ├── TopBar (HBoxContainer, mouse_filter=IGNORE)
-│   │   │   ├── %BattleTurnLabel, %BattleEnergyLabel
-│   │   │   └── %DrawCountLabel, %DiscardCountLabel
-│   │   ├── %CharacterInfo (PanelContainer) ─── character_info.gd
-│   │   ├── %CardHand (HBoxContainer, mouse_filter=IGNORE) ─── card_hand.gd
+│   │   │   └── %BattleTurnLabel (160px)
+│   │   ├── %TimelineBar (Control, layout_mode=1, 상단 우측) ─── timeline_bar.gd
+│   │   ├── %CharacterInfo (PanelContainer, 좌하단) ─── character_info.gd
+│   │   │   └── 이름, HP, 에너지, 드로우/무덤 카운트, 상태이상
+│   │   ├── %CardHand (Control, 하단 중앙, mouse_filter=IGNORE) ─── card_hand.gd
 │   │   │   └── [CardUI instances] (PanelContainer, mouse_filter=STOP)
-│   │   ├── %TimelineBar (VBoxContainer, mouse_filter=IGNORE) ─── timeline_bar.gd
-│   │   └── %EndTurnButton (Button)
+│   │   ├── %EndTurnButton (Button, 우측 중앙)
+│   │   ├── %GraveyardButton (Button, 우측)
+│   │   └── %GraveyardPopup (PanelContainer, 600×400, hidden)
 │   └── BattleResult (Control) ─── battle_result.gd
-└── GridContainer (Node2D) ─── grid_visual.gd
-    └── [Character sprite Node2D들]
+└── GridContainer (Node2D, 동적 위치) ─── grid_visual.gd
+    └── [Character sprite Node2D들 (standing offset)]
 ```
 
 > **자세한 설계 문서**: `docs/DESIGN.md` 참고

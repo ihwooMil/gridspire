@@ -15,7 +15,7 @@ var grid_width: int = 0
 var grid_height: int = 0
 
 ## Pixel size of each tile for rendering (set by the battle scene).
-var tile_size: Vector2 = Vector2(64, 64)
+var tile_size: Vector2 = Vector2(116, 58)
 
 ## Range pattern types for targeting.
 enum RangePattern {

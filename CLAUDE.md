@@ -1,0 +1,64 @@
+# GridSpire - Claude Code 프로젝트 가이드
+
+## 프로젝트 개요
+Godot 4.4 (GL Compatibility) 기반 택티컬 덱빌딩 RPG.
+GDScript 사용, 리소스 기반 데이터 모델 (.tres 파일).
+
+## 빌드 & 배포
+- **엔진**: Godot 4.4 stable
+- **렌더러**: GL Compatibility
+- **Web 배포**: GitHub Pages via GitHub Actions
+  - Docker: `barichello/godot-ci:4.4`
+  - URL: https://ihwoomil.github.io/gridspire/
+  - Workflow: `.github/workflows/deploy-web.yml`
+
+## 주요 규칙
+
+### Git 커밋 전 체크리스트
+1. `git status`로 untracked 파일 확인 — Godot 에디터에서 새로 만든 파일은 자동으로 git에 추가되지 않음
+2. 특히 `class_name`을 선언한 .gd 파일이 빠지면 다른 스크립트에서 연쇄 Parse Error 발생
+3. `.tres` 리소스 파일도 빠짐없이 커밋할 것
+
+### export_presets.cfg 수정 시 주의사항
+- 수동 편집 지양, Godot 에디터에서 생성 권장
+- 수동 편집이 필요하면 `docs/web_export_troubleshooting.md` 참조
+- `variant/thread_support`는 bool 타입 (true/false), int가 아님
+- `progressive_web_app/offline_page`는 실제 존재하는 파일만 지정하거나 비워둘 것
+
+### CI Workflow 디버깅
+- Import 단계에서 `2>/dev/null` 사용 금지 → `2>&1`로 에러를 표시할 것
+- Build 단계에서 `--verbose` 플래그 사용 권장
+- 외부 URL 다운로드에 의존하는 단계는 실패 가능성 있음
+
+## 프로젝트 구조
+```
+scripts/
+  core/       # 데이터 모델, 열거형, 게임/씬 매니저
+  combat/     # 전투 시스템, 카드 효과, 타임라인
+  cards/      # 덱 매니저
+  grid/       # 그리드 시스템
+  ui/         # UI 스크립트
+  utils/      # 유틸리티
+resources/
+  cards/      # 카드 .tres (warrior/, mage/, rogue/, enemies/, summons/)
+  characters/ # 캐릭터 .tres
+  maps/       # 맵 데이터
+  upgrades/   # 스텟 업그레이드 .tres
+scenes/       # .tscn 씬 파일
+assets/       # 스프라이트, 아이콘
+docs/         # 기획서, 트러블슈팅 문서
+```
+
+## Autoload 싱글톤
+- `GameManager` — 게임 상태, 파티, 골드, 맵 관리
+- `SceneManager` — 씬 전환
+- `BattleManager` — 전투 진행, 턴 관리
+- `GridManager` — 그리드 좌표, 이동, 범위 계산 (tile_size 2:1 비율, 동적 계산)
+- `DeckManager` — 덱 셔플, 드로우, 버리기, 무덤 조회 (get_discard_pile)
+
+## 전투 UI 레이아웃 (1280×720)
+- **상단**: 턴 이름(좌) + 타임라인 바(우)
+- **좌하단**: 캐릭터 정보 (이름, HP, 에너지, 드로우/무덤 카운트, 상태이상)
+- **하단 중앙**: 카드 핸드 (부채꼴, 드로우 애니메이션)
+- **우측**: End Turn 버튼 + 무덤 버튼 (클릭 시 팝업)
+- **그리드**: 2:1 타일, 상단 2줄 벽 장식, 캐릭터 standing 오프셋

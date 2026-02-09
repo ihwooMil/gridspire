@@ -29,6 +29,7 @@ var _drag_offset: Vector2 = Vector2.ZERO
 var _home_position: Vector2 = Vector2.ZERO
 var _home_rotation: float = 0.0
 var _home_scale: Vector2 = Vector2.ONE
+var _hover_tween: Tween = null
 
 const DRAG_THRESHOLD: float = 10.0
 
@@ -92,9 +93,10 @@ func _on_mouse_entered() -> void:
 		return
 	_is_hovered = true
 	z_index = 10
-	pivot_offset = size / 2.0
-	var tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(self, "scale", _hover_scale, 0.15)
+	if _hover_tween:
+		_hover_tween.kill()
+	_hover_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_hover_tween.tween_property(self, "scale", _hover_scale, 0.15)
 	card_hovered.emit(card_data)
 
 
@@ -103,8 +105,10 @@ func _on_mouse_exited() -> void:
 		return
 	_is_hovered = false
 	z_index = 0
-	var tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(self, "scale", _base_scale, 0.15)
+	if _hover_tween:
+		_hover_tween.kill()
+	_hover_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_hover_tween.tween_property(self, "scale", _home_scale, 0.15)
 	card_unhovered.emit(card_data)
 
 

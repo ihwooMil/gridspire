@@ -27,58 +27,111 @@ theme_override_constants/separation = 20
 [node name="BattleTurnLabel" type="Label" parent="TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
 text = "Battle"
 theme_override_font_sizes/font_size = 18
 
-[node name="BattleEnergyLabel" type="Label" parent="TopBar"]
+[node name="TimelineBar" parent="." instance=ExtResource("4")]
 unique_name_in_owner = true
-layout_mode = 2
-text = "Energy: 0"
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
-
-[node name="DrawCountLabel" type="Label" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Draw: 0"
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.6, 0.8, 1, 1)
-
-[node name="DiscardCountLabel" type="Label" parent="TopBar"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Discard: 0"
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.8, 0.6, 0.6, 1)
+layout_mode = 1
+anchors_preset = 0
+anchor_right = 1.0
+offset_left = 170.0
+offset_top = 5.0
+offset_right = -10.0
+offset_bottom = 48.0
 
 [node name="CharacterInfo" parent="." instance=ExtResource("2")]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 0
+anchor_top = 1.0
+anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = 50.0
-offset_right = 230.0
-offset_bottom = 180.0
+offset_top = -180.0
+offset_right = 240.0
+offset_bottom = 0.0
 
 [node name="CardHand" parent="." instance=ExtResource("3")]
-unique_name_in_owner = true
-
-[node name="TimelineBar" parent="." instance=ExtResource("4")]
 unique_name_in_owner = true
 
 [node name="EndTurnButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 3
+anchors_preset = 0
 anchor_left = 1.0
-anchor_top = 1.0
+anchor_top = 0.5
 anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -140.0
-offset_top = -55.0
-offset_right = -10.0
-offset_bottom = -10.0
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -22.0
+offset_right = -5.0
+offset_bottom = 22.0
 grow_horizontal = 0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 16
+grow_vertical = 2
+theme_override_font_sizes/font_size = 14
 text = "End Turn"
+
+[node name="GraveyardButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = 30.0
+offset_right = -5.0
+offset_bottom = 80.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 12
+text = "Grave
+(0)"
+
+[node name="GraveyardPopup" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GraveyardPopup"]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="GraveyardPopup/VBoxContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="GraveyardPopup/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Discard Pile"
+theme_override_font_sizes/font_size = 16
+
+[node name="CloseButton" type="Button" parent="GraveyardPopup/VBoxContainer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "X"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="GraveyardPopup/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 340)
+
+[node name="GraveyardCardGrid" type="GridContainer" parent="GraveyardPopup/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8

@@ -115,3 +115,9 @@ func get_draw_count(character: CharacterData) -> int:
 func get_discard_count(character: CharacterData) -> int:
 	var pile: Array[CardData] = discard_piles.get(character, [] as Array[CardData])
 	return pile.size()
+
+
+## Get a copy of the discard pile for viewing.
+func get_discard_pile(character: CharacterData) -> Array[CardData]:
+	var pile: Array[CardData] = discard_piles.get(character, [] as Array[CardData])
+	return pile.duplicate()

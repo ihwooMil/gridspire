@@ -62,23 +62,44 @@ func _start_battle() -> void:
 	var grid_h: int = encounter.grid_height if encounter else 8
 	GridManager.initialize_grid(grid_w, grid_h)
 
+	# Dynamic tile size: fit grid to available screen area with 2:1 ratio
+	var available_w: float = 1280.0 - 90.0  # right margin for graveyard/end turn
+	var available_h: float = 720.0 - 50.0 - 180.0  # top bar + bottom UI
+	var tile_h: float = floorf(available_h / grid_h)
+	var tile_w: float = tile_h * 2.0  # enforce 2:1 ratio
+	# Clamp if grid exceeds available width
+	if tile_w * grid_w > available_w:
+		tile_w = floorf(available_w / grid_w)
+		tile_h = tile_w / 2.0
+	GridManager.tile_size = Vector2(tile_w, tile_h)
+
+	# Center grid horizontally
+	var grid_pixel_w: float = tile_w * grid_w
+	var center_x: float = (1280.0 - grid_pixel_w) / 2.0
+	grid_container.position = Vector2(center_x, 50.0)
+
+	# Top 2 rows are decorative wall tiles
+	for x: int in grid_w:
+		GridManager.set_tile_type(Vector2i(x, 0), Enums.TileType.WALL)
+		GridManager.set_tile_type(Vector2i(x, 1), Enums.TileType.WALL)
+
 	# Add some obstacle tiles
 	_place_obstacles(grid_w, grid_h)
 
-	# Place players on left side
+	# Place players on left side (skip wall rows 0-1)
 	var player_start_col: int = 1
 	for i: int in players.size():
 		var row: int = (grid_h / 2) - (players.size() / 2) + i
-		row = clampi(row, 0, grid_h - 1)
+		row = clampi(row, 2, grid_h - 1)
 		# Reset grid position for battle
 		GridManager.place_character(players[i], Vector2i(player_start_col, row))
 		grid_container.ensure_character_sprite(players[i])
 
-	# Place enemies on right side
+	# Place enemies on right side (skip wall rows 0-1)
 	var enemy_start_col: int = grid_w - 2
 	for i: int in enemies.size():
 		var row: int = (grid_h / 2) - (enemies.size() / 2) + i
-		row = clampi(row, 0, grid_h - 1)
+		row = clampi(row, 2, grid_h - 1)
 		GridManager.place_character(enemies[i], Vector2i(enemy_start_col, row))
 		grid_container.ensure_character_sprite(enemies[i])
 
@@ -193,11 +214,11 @@ func _place_obstacles(grid_w: int, grid_h: int) -> void:
 	var wall_count: int = rng.randi_range(2, 4)
 	for i: int in wall_count:
 		var x: int = rng.randi_range(3, grid_w - 3)
-		var y: int = rng.randi_range(1, grid_h - 2)
+		var y: int = rng.randi_range(2, grid_h - 2)
 		GridManager.set_tile_type(Vector2i(x, y), Enums.TileType.WALL)
 	# Add a hazard tile
 	var hx: int = rng.randi_range(3, grid_w - 3)
-	var hy: int = rng.randi_range(1, grid_h - 2)
+	var hy: int = rng.randi_range(2, grid_h - 2)
 	GridManager.set_tile_type(Vector2i(hx, hy), Enums.TileType.HAZARD)
 
 
@@ -231,12 +252,14 @@ func _on_drag_drop(card: CardData, source: CharacterData, drop_pos: Vector2) -> 
 	var local_pos: Vector2 = grid_container.to_local(drop_pos)
 	var grid_pos: Vector2i = GridManager.world_to_grid(local_pos)
 
-	# Auto-target cards: play immediately regardless of drop position
+	# Auto-target cards: play only when dropped above the card hand area
 	match card.target_type:
 		Enums.TargetType.SELF, Enums.TargetType.NONE, Enums.TargetType.ALL_ALLIES, Enums.TargetType.ALL_ENEMIES:
-			var targets: Array = BattleManager.get_valid_targets(card, source)
-			if not targets.is_empty():
-				BattleManager.play_card(card, source, targets[0])
+			var viewport_h: float = get_viewport_rect().size.y
+			if drop_pos.y < viewport_h * 0.6:
+				var targets: Array = BattleManager.get_valid_targets(card, source)
+				if not targets.is_empty():
+					BattleManager.play_card(card, source, targets[0])
 			return
 
 	# Manual target cards: check if drop landed on a valid target

@@ -2,7 +2,8 @@
 ## Picks one of three random event types and presents choices.
 extends Control
 
-const UPGRADE_PATH: String = "res://resources/upgrades/"
+const CardRegistry = preload("res://scripts/core/card_registry.gd")
+
 
 enum EventType { BLACKSMITH, HEALING_FOUNTAIN, WANDERING_MERCHANT }
 
@@ -23,18 +24,8 @@ func _ready() -> void:
 
 
 func _load_random_upgrade() -> void:
-	var upgrades: Array[StatUpgrade] = []
-	var dir := DirAccess.open(UPGRADE_PATH)
-	if dir:
-		dir.list_dir_begin()
-		var file_name: String = dir.get_next()
-		while file_name != "":
-			if file_name.ends_with(".tres"):
-				var upgrade: StatUpgrade = load(UPGRADE_PATH + file_name) as StatUpgrade
-				if upgrade:
-					upgrades.append(upgrade)
-			file_name = dir.get_next()
-		dir.list_dir_end()
+	# Load upgrades from static registry (web build compatible)
+	var upgrades: Array[StatUpgrade] = CardRegistry.get_upgrades()
 	if upgrades.size() > 0:
 		upgrades.shuffle()
 		_upgrade_offer = upgrades[0]

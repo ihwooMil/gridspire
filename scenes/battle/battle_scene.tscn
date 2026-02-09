@@ -18,5 +18,5 @@ position = Vector2(640, 360)
 [node name="BattleResult" parent="UI" instance=ExtResource("4")]
 
 [node name="GridContainer" type="Node2D" parent="."]
-position = Vector2(100, 60)
+position = Vector2(60, 50)
 script = ExtResource("2")
