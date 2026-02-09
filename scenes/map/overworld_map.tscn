@@ -60,7 +60,7 @@ anchor_bottom = 1.0
 offset_top = 40.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_scroll_mode = 1
+horizontal_scroll_mode = 2
 vertical_scroll_mode = 0
 
 [node name="MapContent" type="Control" parent="ScrollContainer"]

@@ -26,6 +26,7 @@ const COLOR_ATTACK_RANGE := Color(0.9, 0.2, 0.2, 0.25)
 const COLOR_PATH_PREVIEW := Color(0.3, 0.7, 1.0, 0.5)
 const COLOR_SELECTED_TILE := Color(1.0, 0.9, 0.3, 0.4)
 const COLOR_HOVER := Color(1.0, 1.0, 1.0, 0.15)
+const COLOR_AOE_PREVIEW := Color(1.0, 0.5, 0.1, 0.35)
 
 ## Character colors
 const COLOR_PLAYER := Color(0.3, 0.7, 1.0)
@@ -80,6 +81,7 @@ var character_sprites: Dictionary = {}
 var _targeting: bool = false
 var _targeting_card: CardData = null
 var _targeting_source: CharacterData = null
+var _aoe_preview_tiles: Array[Vector2i] = []
 
 ## Movement animation state
 var _animating: bool = false
@@ -380,6 +382,12 @@ func _draw_highlights() -> void:
 		var center: Vector2 = Vector2(pos) * ts + ts * 0.5
 		draw_circle(center, 4.0, Color(0.3, 0.7, 1.0, 0.8))
 
+	# AOE preview (orange)
+	for pos: Vector2i in _aoe_preview_tiles:
+		var rect := Rect2(Vector2(pos) * ts, ts)
+		draw_rect(rect, COLOR_AOE_PREVIEW, true)
+		draw_rect(rect, Color(1.0, 0.5, 0.1, 0.5), false, 1.5)
+
 	# Selected tile
 	if selected_tile != Vector2i(-1, -1) and GridManager.grid.has(selected_tile):
 		var rect := Rect2(Vector2(selected_tile) * ts, ts)
@@ -499,6 +507,15 @@ func _handle_mouse_move(event: InputEventMouseMotion) -> void:
 		hovered_tile = grid_pos
 		tile_hovered.emit(grid_pos)
 
+		# AOE preview during card targeting
+		if _targeting and _targeting_card and GridManager.grid.has(grid_pos):
+			if grid_pos in highlighted_attack_tiles:
+				_aoe_preview_tiles = _get_aoe_tiles(grid_pos, _targeting_card)
+			else:
+				_aoe_preview_tiles = []
+		elif not _targeting:
+			_aoe_preview_tiles = []
+
 		# Update path preview if a character is selected and tile is in move range
 		if selected_character and GridManager.grid.has(grid_pos):
 			if grid_pos in highlighted_move_tiles:
@@ -567,7 +584,11 @@ func _handle_mouse_click(event: InputEventMouseButton) -> void:
 func select_character(character: CharacterData) -> void:
 	selected_character = character
 	selected_tile = character.grid_position
-	highlighted_move_tiles = GridManager.get_reachable_tiles(character)
+	# Only show movement range if the character hasn't moved yet and isn't rooted
+	if not BattleManager.has_moved_this_turn and character.get_status_stacks(Enums.StatusEffect.ROOT) <= 0:
+		highlighted_move_tiles = GridManager.get_reachable_tiles(character)
+	else:
+		highlighted_move_tiles = []
 	path_preview_tiles = []
 	character_selected.emit(character)
 	queue_redraw()
@@ -639,6 +660,7 @@ func exit_targeting_mode() -> void:
 	_targeting_card = null
 	_targeting_source = null
 	highlighted_attack_tiles = []
+	_aoe_preview_tiles = []
 	targeting_cancelled.emit()
 	queue_redraw()
 
@@ -674,8 +696,30 @@ func _handle_targeting_click(grid_pos: Vector2i, tile: GridTile) -> void:
 		_targeting_card = null
 		_targeting_source = null
 		highlighted_attack_tiles = []
+		_aoe_preview_tiles = []
 		queue_redraw()
 		target_selected.emit(card, source, target)
 	else:
 		# Invalid target, cancel
 		exit_targeting_mode()
+
+
+## Get the tiles that would be affected by a card's area effect at the given position.
+func _get_aoe_tiles(center: Vector2i, card: CardData) -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	var radius: int = 0
+
+	# Get the largest area_radius from the card's effects
+	if card.target_type == Enums.TargetType.AREA:
+		for effect in card.effects:
+			if effect.area_radius > radius:
+				radius = effect.area_radius
+
+	if radius <= 0:
+		# Single tile target — just highlight the center tile
+		tiles.append(center)
+		return tiles
+
+	# Get all tiles within the AOE radius (manhattan distance)
+	tiles = GridManager.get_tiles_in_range(center, 0, radius)
+	return tiles
