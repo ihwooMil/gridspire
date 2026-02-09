@@ -364,10 +364,11 @@ func _get_tile_color(tile: GridTile) -> Color:
 func _draw_highlights() -> void:
 	var ts: Vector2 = GridManager.tile_size
 
-	# Movement range (blue)
-	for pos: Vector2i in highlighted_move_tiles:
-		var rect := Rect2(Vector2(pos) * ts, ts)
-		draw_rect(rect, COLOR_MOVE_RANGE, true)
+	# Movement range (blue) — skip if already moved this turn
+	if not BattleManager.has_moved_this_turn:
+		for pos: Vector2i in highlighted_move_tiles:
+			var rect := Rect2(Vector2(pos) * ts, ts)
+			draw_rect(rect, COLOR_MOVE_RANGE, true)
 
 	# Attack range (red)
 	for pos: Vector2i in highlighted_attack_tiles:
@@ -562,7 +563,7 @@ func _handle_mouse_click(event: InputEventMouseButton) -> void:
 
 	if selected_character:
 		# If clicking a valid movement tile, move there
-		if grid_pos in highlighted_move_tiles:
+		if not BattleManager.has_moved_this_turn and grid_pos in highlighted_move_tiles:
 			var character: CharacterData = selected_character
 			deselect_character()
 			BattleManager.move_character(character, grid_pos)

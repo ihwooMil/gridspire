@@ -8,7 +8,8 @@ extends Control
 const BAR_HEIGHT: float = 40.0
 const MARKER_RADIUS: float = 16.0
 const BAR_MARGIN: float = 20.0
-const LERP_SPEED: float = 6.0
+## Linear movement speed: 0.22 means ~4.5 seconds to traverse the full bar (0→1).
+const MOVE_SPEED: float = 0.22
 
 ## Smooth display positions: CharacterData -> float (0.0 = left, 1.0 = right)
 var _display_positions: Dictionary = {}
@@ -125,7 +126,7 @@ func _process(delta: float) -> void:
 		var current: float = _display_positions[ch]
 		var target: float = _target_positions[ch]
 		if absf(current - target) > 0.002:
-			_display_positions[ch] = lerpf(current, target, LERP_SPEED * delta)
+			_display_positions[ch] = move_toward(current, target, MOVE_SPEED * delta)
 			any_moved = true
 		else:
 			_display_positions[ch] = target

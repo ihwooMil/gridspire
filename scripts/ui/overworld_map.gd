@@ -25,7 +25,9 @@ func _ready() -> void:
 	scroll_container.scroll_horizontal = 0
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.pressed:
