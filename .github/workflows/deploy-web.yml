@@ -25,7 +25,10 @@ jobs:
       - name: Setup export templates
         run: |
           mkdir -p /github/home/.local/share/godot/export_templates/4.4.stable
-          mv /root/.local/share/godot/export_templates/4.4.stable/* /github/home/.local/share/godot/export_templates/4.4.stable/ 2>/dev/null || true
+          cp -r /root/.local/share/godot/export_templates/4.4.stable/* /github/home/.local/share/godot/export_templates/4.4.stable/ 2>/dev/null || true
+          echo "=== Template files ==="
+          ls -la /github/home/.local/share/godot/export_templates/4.4.stable/ || echo "No templates found at 4.4.stable"
+          ls /root/.local/share/godot/export_templates/ 2>/dev/null || echo "No root templates dir"
 
       - name: Import project
         run: godot --headless --editor --quit 2>/dev/null || true
@@ -33,7 +36,7 @@ jobs:
       - name: Build Web export
         run: |
           mkdir -p build/web
-          godot --headless --export-release "Web" build/web/index.html
+          godot --headless --verbose --export-release "Web" build/web/index.html
 
       - name: Add coi-serviceworker for SharedArrayBuffer
         run: |
