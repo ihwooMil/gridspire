@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 0
+value = 3
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+dice_count = 1
+dice_sides = 4
+dice_bonus = 1
+
+[resource]
+script = ExtResource("1")
+id = "goblin_throw"
+card_name = "Goblin Throw"
+description = "Throw a rock."
+energy_cost = 1
+range_min = 2
+range_max = 3
+target_type = 2
+effects = [SubResource("effect_1")]
+rarity = 0

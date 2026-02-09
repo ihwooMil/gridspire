@@ -38,11 +38,27 @@ const COLOR_HP_BAR_LOW := Color(0.9, 0.3, 0.2)
 ## Sprite sheet definitions: character_name -> { path, cols, rows, frame_count, fps }
 var sprite_sheets: Dictionary = {
 	"Mage": {
-		"path": "res://res/Seo-A-walk.png",
-		"cols": 5,
-		"rows": 5,
-		"frame_count": 25,
-		"fps": 12.0,
+		"walk": {
+			"path": "res://res/Seo-A-walk.png",
+			"cols": 5,
+			"rows": 5,
+			"frame_count": 25,
+			"fps": 12.0,
+		},
+		"cast": {
+			"path": "res://res/mage-cast.png",
+			"cols": 5,
+			"rows": 5,
+			"frame_count": 25,
+			"fps": 12.0,
+		},
+		"kneel": {
+			"path": "res://res/mage-kneel.png",
+			"cols": 5,
+			"rows": 5,
+			"frame_count": 25,
+			"fps": 12.0,
+		},
 	},
 }
 
@@ -126,10 +142,10 @@ func _create_character_sprite(character: CharacterData) -> Node2D:
 	add_child(sprite)
 	character_sprites[character] = sprite
 
-	# Check if this character has a sprite sheet
+	# Check if this character has sprite sheets
 	if sprite_sheets.has(character.character_name):
-		var sheet_info: Dictionary = sprite_sheets[character.character_name]
-		var anim_sprite := _create_animated_sprite(sheet_info)
+		var sheets: Dictionary = sprite_sheets[character.character_name]
+		var anim_sprite := _create_animated_sprite(sheets)
 		if anim_sprite:
 			sprite.add_child(anim_sprite)
 			anim_sprite.play("idle")
@@ -137,54 +153,78 @@ func _create_character_sprite(character: CharacterData) -> Node2D:
 	return sprite
 
 
-## Create an AnimatedSprite2D from a sprite sheet definition.
-func _create_animated_sprite(sheet_info: Dictionary) -> AnimatedSprite2D:
-	var texture: Texture2D = load(sheet_info["path"])
-	if not texture:
+## Create an AnimatedSprite2D from a multi-animation sprite sheet dictionary.
+## sheets: { "walk": {path, cols, rows, frame_count, fps}, "cast": {...}, ... }
+func _create_animated_sprite(sheets: Dictionary) -> AnimatedSprite2D:
+	if sheets.is_empty():
 		return null
 
-	var cols: int = sheet_info["cols"]
-	var rows: int = sheet_info["rows"]
-	var frame_count: int = sheet_info["frame_count"]
-	var fps: float = sheet_info["fps"]
-	var frame_w: int = int(texture.get_width()) / cols
-	var frame_h: int = int(texture.get_height()) / rows
-
 	var frames := SpriteFrames.new()
+	var ref_frame_w: int = 0
+	var ref_frame_h: int = 0
 
-	# Idle animation (first frame only)
-	frames.add_animation("idle")
-	frames.set_animation_speed("idle", 1.0)
-	frames.set_animation_loop("idle", false)
-	var idle_tex := AtlasTexture.new()
-	idle_tex.atlas = texture
-	idle_tex.region = Rect2(0, 0, frame_w, frame_h)
-	frames.add_frame("idle", idle_tex)
+	# Build idle animation from the first frame of the "walk" sheet (or first available)
+	var idle_sheet_key: String = "walk" if sheets.has("walk") else sheets.keys()[0]
+	var idle_info: Dictionary = sheets[idle_sheet_key]
+	var idle_texture: Texture2D = load(idle_info["path"])
+	if idle_texture:
+		var cols: int = idle_info["cols"]
+		var rows: int = idle_info["rows"]
+		ref_frame_w = int(idle_texture.get_width()) / cols
+		ref_frame_h = int(idle_texture.get_height()) / rows
 
-	# Walk animation (all frames)
-	frames.add_animation("walk")
-	frames.set_animation_speed("walk", fps)
-	frames.set_animation_loop("walk", true)
-	for i: int in frame_count:
-		var col: int = i % cols
-		var row: int = i / cols
-		var atlas_tex := AtlasTexture.new()
-		atlas_tex.atlas = texture
-		atlas_tex.region = Rect2(col * frame_w, row * frame_h, frame_w, frame_h)
-		frames.add_frame("walk", atlas_tex)
+		frames.add_animation("idle")
+		frames.set_animation_speed("idle", 1.0)
+		frames.set_animation_loop("idle", false)
+		var idle_tex := AtlasTexture.new()
+		idle_tex.atlas = idle_texture
+		idle_tex.region = Rect2(0, 0, ref_frame_w, ref_frame_h)
+		frames.add_frame("idle", idle_tex)
+
+	# Build each named animation from its sprite sheet
+	for anim_name: String in sheets.keys():
+		var sheet_info: Dictionary = sheets[anim_name]
+		var texture: Texture2D = load(sheet_info["path"])
+		if not texture:
+			continue
+
+		var cols: int = sheet_info["cols"]
+		var rows: int = sheet_info["rows"]
+		var frame_count: int = sheet_info["frame_count"]
+		var fps: float = sheet_info["fps"]
+		var frame_w: int = int(texture.get_width()) / cols
+		var frame_h: int = int(texture.get_height()) / rows
+
+		if ref_frame_w == 0:
+			ref_frame_w = frame_w
+			ref_frame_h = frame_h
+
+		frames.add_animation(anim_name)
+		frames.set_animation_speed(anim_name, fps)
+		frames.set_animation_loop(anim_name, true)
+		for i: int in frame_count:
+			var col: int = i % cols
+			var row: int = i / cols
+			var atlas_tex := AtlasTexture.new()
+			atlas_tex.atlas = texture
+			atlas_tex.region = Rect2(col * frame_w, row * frame_h, frame_w, frame_h)
+			frames.add_frame(anim_name, atlas_tex)
 
 	# Remove default animation if it exists
 	if frames.has_animation("default"):
 		frames.remove_animation("default")
 
+	if ref_frame_w == 0:
+		return null
+
 	var anim_sprite := AnimatedSprite2D.new()
 	anim_sprite.sprite_frames = frames
 	anim_sprite.centered = true
 	# Scale to fit tile size
-	var scale_factor: float = GridManager.tile_size.x / float(frame_w) * 0.9
+	var scale_factor: float = GridManager.tile_size.x / float(ref_frame_w) * 0.9
 	anim_sprite.scale = Vector2(scale_factor, scale_factor)
 	# Offset up slightly so feet align with tile center
-	anim_sprite.offset = Vector2(0, -frame_h * 0.15)
+	anim_sprite.offset = Vector2(0, -ref_frame_h * 0.15)
 
 	return anim_sprite
 

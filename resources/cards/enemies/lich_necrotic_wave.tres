@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 7
+value = 8
+duration = 0
+status_effect = 0
+area_radius = 2
+push_pull_distance = 0
+dice_count = 2
+dice_sides = 4
+dice_bonus = 0
+
+[resource]
+script = ExtResource("1")
+id = "lich_necrotic_wave"
+card_name = "Necrotic Wave"
+description = "Unleash a massive wave of death."
+energy_cost = 3
+range_min = 1
+range_max = 4
+target_type = 6
+effects = [SubResource("effect_1")]
+rarity = 0

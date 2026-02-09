@@ -8,8 +8,11 @@ var _lifetime: float = 0.8
 var _elapsed: float = 0.0
 
 
-func setup(amount: int, is_damage: bool = true, world_position: Vector2 = Vector2.ZERO) -> void:
-	text = str(amount)
+func setup(amount: int, is_damage: bool = true, world_position: Vector2 = Vector2.ZERO, dice_notation: String = "") -> void:
+	if dice_notation != "":
+		text = "%d (%s)" % [amount, dice_notation]
+	else:
+		text = str(amount)
 	position = world_position + Vector2(randf_range(-10, 10), -20)
 	if is_damage:
 		add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))

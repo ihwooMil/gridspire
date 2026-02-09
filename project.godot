@@ -19,6 +19,7 @@ config/icon="res://assets/sprites/icon.svg"
 [autoload]
 
 GameManager="*res://scripts/core/game_manager.gd"
+SceneManager="*res://scripts/core/scene_manager.gd"
 BattleManager="*res://scripts/combat/battle_manager.gd"
 GridManager="*res://scripts/grid/grid_manager.gd"
 DeckManager="*res://scripts/cards/deck_manager.gd"

@@ -11,6 +11,9 @@ duration = 0
 status_effect = 0
 area_radius = 0
 push_pull_distance = 1
+dice_count = 1
+dice_sides = 6
+dice_bonus = 2
 
 [resource]
 script = ExtResource("1")

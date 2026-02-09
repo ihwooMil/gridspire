@@ -1,12 +1,10 @@
-## Shown after a battle ends. Displays victory or defeat and a continue button.
+## Shown after a battle ends in defeat. Victory is handled by the reward screen.
 class_name BattleResultScreen
 extends Control
 
 @onready var result_label: Label = %ResultLabel
 @onready var detail_label: Label = %DetailLabel
 @onready var continue_button: Button = %ContinueButton
-
-var _result: String = ""
 
 
 func _ready() -> void:
@@ -16,24 +14,18 @@ func _ready() -> void:
 
 
 func _on_battle_ended(result: String) -> void:
-	_result = result
-	visible = true
-
 	if result == "win":
-		result_label.text = "VICTORY"
-		result_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-		detail_label.text = "All enemies defeated!"
-		continue_button.text = "Continue"
-	else:
-		result_label.text = "DEFEAT"
-		result_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2))
-		detail_label.text = "Your party has fallen..."
-		continue_button.text = "Return to Menu"
+		# Victory handled by reward screen via SceneManager
+		return
+
+	# Show defeat overlay
+	visible = true
+	result_label.text = "DEFEAT"
+	result_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2))
+	detail_label.text = "Your party has fallen..."
+	continue_button.text = "Return to Menu"
 
 
 func _on_continue() -> void:
 	visible = false
-	if _result == "win":
-		GameManager.change_state(Enums.GameState.MAP)
-	else:
-		GameManager.change_state(Enums.GameState.MAIN_MENU)
+	GameManager.change_state(Enums.GameState.MAIN_MENU)

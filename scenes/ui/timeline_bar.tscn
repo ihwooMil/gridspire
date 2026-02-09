@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cxpblq423s0nr" path="res://scripts/ui/timeline_bar.gd" id="1"]
 
-[node name="TimelineBar" type="HBoxContainer"]
+[node name="TimelineBar" type="Control"]
 mouse_filter = 2
 anchors_preset = 10
 anchor_right = 1.0
@@ -11,6 +11,4 @@ offset_bottom = 104.0
 offset_left = 10.0
 offset_right = -10.0
 grow_horizontal = 2
-alignment = 1
-theme_override_constants/separation = 4
 script = ExtResource("1")

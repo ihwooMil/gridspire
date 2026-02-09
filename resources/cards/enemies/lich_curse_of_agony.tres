@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 4
+value = 3
+duration = 3
+status_effect = 5
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "lich_curse_of_agony"
+card_name = "Curse of Agony"
+description = "Inflict lingering agony. Apply 3 Poison for 3 turns."
+energy_cost = 1
+range_min = 2
+range_max = 4
+target_type = 2
+effects = [SubResource("effect_1")]
+rarity = 0

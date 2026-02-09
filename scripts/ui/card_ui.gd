@@ -1,11 +1,13 @@
 ## Visual representation of a single card in the hand.
-## Displays card name, cost, description, and handles hover/click interactions.
+## Displays card name, cost, description, and handles hover/click/drag interactions.
 class_name CardUI
 extends PanelContainer
 
 signal card_clicked(card_data: CardData)
 signal card_hovered(card_data: CardData)
 signal card_unhovered(card_data: CardData)
+signal card_drag_started(card_data: CardData)
+signal card_drag_ended(card_data: CardData)
 
 @onready var name_label: Label = %NameLabel
 @onready var cost_label: Label = %CostLabel
@@ -18,6 +20,11 @@ var playable: bool = true
 var _base_scale: Vector2 = Vector2.ONE
 var _hover_scale: Vector2 = Vector2(1.15, 1.15)
 var _is_hovered: bool = false
+var _is_dragging: bool = false
+var _press_position: Vector2 = Vector2.ZERO
+var _drag_offset: Vector2 = Vector2.ZERO
+
+const DRAG_THRESHOLD: float = 10.0
 
 const RARITY_COLORS: Array[Color] = [
 	Color(0.6, 0.6, 0.6),    # Common: grey
@@ -68,6 +75,8 @@ func _update_playable_visual() -> void:
 
 
 func _on_mouse_entered() -> void:
+	if _is_dragging:
+		return
 	_is_hovered = true
 	z_index = 10
 	pivot_offset = size / 2.0
@@ -77,6 +86,8 @@ func _on_mouse_entered() -> void:
 
 
 func _on_mouse_exited() -> void:
+	if _is_dragging:
+		return
 	_is_hovered = false
 	z_index = 0
 	var tween: Tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
@@ -87,6 +98,27 @@ func _on_mouse_exited() -> void:
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
-		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			if playable and card_data:
-				card_clicked.emit(card_data)
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				_press_position = mb.global_position
+			else:
+				# Mouse released
+				if _is_dragging:
+					_is_dragging = false
+					card_drag_ended.emit(card_data)
+				else:
+					# No drag occurred, treat as click
+					if playable and card_data:
+						card_clicked.emit(card_data)
+
+	elif event is InputEventMouseMotion:
+		var mm: InputEventMouseMotion = event
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and playable and card_data:
+			if not _is_dragging:
+				var dist: float = mm.global_position.distance_to(_press_position)
+				if dist > DRAG_THRESHOLD:
+					_is_dragging = true
+					_drag_offset = global_position - mm.global_position
+					card_drag_started.emit(card_data)
+			if _is_dragging:
+				global_position = mm.global_position + _drag_offset

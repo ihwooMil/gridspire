@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bqefrgcoye4x" path="res://scripts/ui/card_hand.gd" id="1"]
 
-[node name="CardHand" type="HBoxContainer"]
+[node name="CardHand" type="Control"]
 mouse_filter = 2
 anchors_preset = 12
 anchor_top = 1.0
@@ -13,6 +13,4 @@ offset_left = 60.0
 offset_right = -180.0
 grow_horizontal = 2
 grow_vertical = 0
-alignment = 1
-theme_override_constants/separation = 8
 script = ExtResource("1")
