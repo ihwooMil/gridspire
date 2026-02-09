@@ -90,3 +90,21 @@ docs/         # 기획서, 트러블슈팅 문서
 - **Rogue (콤보 체인)**: `tags` (PackedStringArray)로 태그 부여
   - `combo_tag`, `combo_bonus`로 선행 태그 확인 시 보너스 데미지
   - `combo_only`로 콤보 조건 미충족 시 효과 스킵
+
+## 타임라인 바 애니메이션
+- `_process(delta)` + `lerpf()` 기반 연속 애니메이션
+- 우측(1.0) = 곧 행동 (낮은 tick), 좌측(0.0) = 방금 행동 (높은 tick)
+- 행동 시 마커가 우측 끝(결승선)에 도달 → 좌측으로 리셋
+- `_display_positions` (현재 표시), `_target_positions` (목표) 분리
+
+## 그리드 비주얼 하이라이트
+- **이동 범위** (파란색): `select_character()` 시 `BattleManager.has_moved_this_turn` 및 ROOT 상태 확인
+- **공격 범위** (빨간색): 카드 타겟팅 진입 시 표시
+- **AOE 미리보기** (주황색): AREA 카드 타겟팅 중 호버 시 `effect.area_radius` 기반 영향 범위 표시
+- **경로 미리보기** (하늘색): 이동 가능 타일 호버 시 BFS 경로 표시
+
+## 오버월드 맵
+- `ScrollContainer`로 가로 스크롤 (horizontal_scroll_mode = ALWAYS)
+- 마우스 휠 상/하 → 가로 스크롤 변환 (`_unhandled_input`에서 처리)
+- `MapNodeButton`: 노드 타입별 색상/아이콘, 방문/도달가능/잠김 상태별 스타일
+- `MapLineDrawer`: 노드 간 연결선 렌더링

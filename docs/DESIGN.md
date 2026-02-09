@@ -399,6 +399,7 @@ character_died(ch)            → main.gd (스프라이트 제거, 타일 정리
 energy_changed(cur, max)      → BattleHUD (에너지 라벨)
 hand_updated(hand)            → CardHand (핸드 재렌더)
 timeline_updated()            → TimelineBar (순서 갱신)
+summon_added(summon, owner)   → BattleScene (소환수 스프라이트 생성)
 ```
 
 ### GridManager 시그널
@@ -509,3 +510,7 @@ gridspire/
 | 2026-02-09 | mouse_filter 수정, 카드 타겟팅 시스템 추가 |
 | 2026-02-09 | CardRegistry 추가, DirAccess→정적 레지스트리 전환 (웹 빌드 호환) |
 | 2026-02-09 | 전투 UI 전면 개편: 타임라인 바 visibility 수정, 2:1 타일 비율, 좌하단 캐릭터 정보 (에너지/드로우/무덤 통합), 우측 턴 종료/무덤 버튼, 카드 드로우/버리기 애니메이션, 무덤 팝업, 상단 2줄 벽 타일, 캐릭터 standing 오프셋 |
+| 2026-02-09 | **버그 수정 4건**: (1) 타임라인 바 size 폴백 + minimum_size 설정 (2) 5개 파일에 `_exit_tree()` 시그널 disconnect 추가 (시그널 누적 방지) (3) `_slide_character()`에서 `movement_started` 시그널 emit 추가 (Push/Pull 애니메이션) (4) `_apply_summon()`에서 `GridManager.place_character()` 호출 + `summon_added` 시그널 추가 |
+| 2026-02-09 | **신규 기능 2건**: (1) 동료 합류 이벤트 — COMPANION 맵 노드, `get_companion_choices()`, `recruit_companion()`, 이벤트 화면 동료 선택 UI (2) 난이도/승천 시스템 — `difficulty` 0-20, `get_difficulty_modifiers()`, `_apply_difficulty_modifiers()`, 타이틀 화면 난이도 슬라이더, 보스 클리어 시 해금 |
+| 2026-02-09 | **카드 아키타입 검증**: 전용 에이전트가 warrior_shield_strike.tres 생성, 마법사 8장 원소 필드 수정, 로그 2장 콤보 필드 수정, 소환 카드 2장 수정 |
+| 2026-02-09 | **UX 개선 4건**: (1) 타임라인 바 lerp 기반 연속 애니메이션 (우측=곧 행동, 좌측=방금 행동, 결승선, 리셋) (2) 이동 완료 후 이동 범위 미표시 (`has_moved_this_turn` / ROOT 체크) (3) AREA 카드 타겟팅 시 AOE 영향 범위 주황색 미리보기 (4) 오버월드 맵 마우스 휠 가로 스크롤 지원 |
