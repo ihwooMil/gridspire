@@ -31,7 +31,9 @@ jobs:
           ls /root/.local/share/godot/export_templates/ 2>/dev/null || echo "No root templates dir"
 
       - name: Import project
-        run: godot --headless --editor --quit 2>/dev/null || true
+        run: |
+          godot --headless --editor --quit 2>&1 || true
+          echo "=== Import complete ==="
 
       - name: Build Web export
         run: |
