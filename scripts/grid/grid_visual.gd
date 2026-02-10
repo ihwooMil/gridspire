@@ -38,6 +38,7 @@ const COLOR_HP_BAR_FILL := Color(0.2, 0.8, 0.3)
 const COLOR_HP_BAR_LOW := Color(0.9, 0.3, 0.2)
 
 ## Sprite sheet definitions: character_name -> { path, cols, rows, frame_count, fps }
+## Static images use cols=1, rows=1, frame_count=1 for single-frame display.
 var sprite_sheets: Dictionary = {
 	"Mage": {
 		"walk": {
@@ -60,6 +61,69 @@ var sprite_sheets: Dictionary = {
 			"rows": 5,
 			"frame_count": 25,
 			"fps": 12.0,
+		},
+	},
+	"Warrior": {
+		"walk": {
+			"path": "res://res/Warrior.jpg",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
+	"Rogue": {
+		"walk": {
+			"path": "res://res/Rogue.jpg",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
+	"Cleric": {
+		"walk": {
+			"path": "res://res/cleric.png",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
+	"Slime": {
+		"walk": {
+			"path": "res://res/Monster.jpg",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
+	"Goblin": {
+		"walk": {
+			"path": "res://res/monster3.png",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
+	"Skeleton Archer": {
+		"walk": {
+			"path": "res://res/archer.jpeg",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
+	"Dragon Whelp": {
+		"walk": {
+			"path": "res://res/image-10.jpg",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
 		},
 	},
 }
