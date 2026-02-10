@@ -1,27 +1,43 @@
 ## Displays the turn order as a horizontal race bar.
-## Character markers move left → right. The first to reach the right edge acts.
-## After acting, the marker resets to the far left and the race continues.
+## Character markers move left → right in real-time based on their speed stat.
+## When a character reaches the right edge, the race pauses for their turn.
+## After acting, the marker resets to the far left and the race resumes.
 class_name TimelineBar
 extends Control
 
 const BAR_HEIGHT: float = 40.0
 const MARKER_RADIUS: float = 16.0
 const BAR_MARGIN: float = 20.0
-## Base animation speed — actual speed is BASE_ANIM_SPEED * (100 / effective_speed).
-const BASE_ANIM_SPEED: float = 2.0
 
-## Smooth display positions: CharacterData → float (0.0 = left, 1.0 = right)
-var _display_positions: Dictionary = {}
-## Target positions computed from timeline tick data
-var _target_positions: Dictionary = {}
-## Currently acting character (shown at finish line)
+## Race speed factor. Characters advance at RACE_SPEED / effective_speed per second.
+## Lower speed stat (e.g. 70) = faster marker; higher speed stat (e.g. 100) = slower.
+const RACE_SPEED: float = 150.0
+
+## When queued events pile up (e.g. multiple enemy turns), speed up the race.
+const CATCH_UP_MULTIPLIER: float = 5.0
+
+## Threshold: when the next-to-act character reaches this position, snap to 1.0.
+const SNAP_THRESHOLD: float = 0.95
+
+enum Phase { RACING, PAUSED }
+
+## Current race state
+var _phase: Phase = Phase.PAUSED
+
+## Visual positions: CharacterData → float (0.0 = far left, 1.0 = right edge)
+var _positions: Dictionary = {}
+
+## Currently acting character (highlighted at finish line)
 var _active_character: CharacterData = null
+
+## Queued game events — processed in order with visual animation between them.
+## Each entry: { "type": "start" or "end", "character": CharacterData }
+var _event_queue: Array = []
 
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(200, 48)
 	BattleManager.battle_started.connect(_on_battle_started)
-	BattleManager.timeline_updated.connect(_on_timeline_updated)
 	BattleManager.turn_started.connect(_on_turn_started)
 	BattleManager.turn_ended.connect(_on_turn_ended)
 	BattleManager.character_died.connect(_on_character_died)
@@ -31,8 +47,6 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
-	if BattleManager.timeline_updated.is_connected(_on_timeline_updated):
-		BattleManager.timeline_updated.disconnect(_on_timeline_updated)
 	if BattleManager.turn_started.is_connected(_on_turn_started):
 		BattleManager.turn_started.disconnect(_on_turn_started)
 	if BattleManager.turn_ended.is_connected(_on_turn_ended):
@@ -42,109 +56,102 @@ func _exit_tree() -> void:
 
 
 func _on_battle_started() -> void:
-	_display_positions.clear()
-	_target_positions.clear()
+	_positions.clear()
+	_event_queue.clear()
 	_active_character = null
-	_recalculate_targets()
-	# Snap display to targets on battle start (no animation needed)
-	for ch: CharacterData in _target_positions.keys():
-		_display_positions[ch] = _target_positions[ch]
-	queue_redraw()
-
-
-func _on_timeline_updated() -> void:
-	_recalculate_targets()
+	# Initialize all characters at the starting line
+	var entries: Array[TimelineEntry] = BattleManager.get_timeline_entries()
+	for entry: TimelineEntry in entries:
+		if entry.character.is_alive():
+			_positions[entry.character] = 0.0
+	_phase = Phase.RACING
 	queue_redraw()
 
 
 func _on_turn_started(character: CharacterData) -> void:
-	_active_character = character
-	# Snap active character to finish line (right edge)
-	_display_positions[character] = 1.0
-	_target_positions[character] = 1.0
-	queue_redraw()
+	_event_queue.append({"type": "start", "character": character})
 
 
 func _on_turn_ended(character: CharacterData) -> void:
-	# Character finished acting → reset to far left
-	_display_positions[character] = 0.0
-	_active_character = null
-	queue_redraw()
+	_event_queue.append({"type": "end", "character": character})
 
 
 func _on_character_died(character: CharacterData) -> void:
-	_display_positions.erase(character)
-	_target_positions.erase(character)
+	_positions.erase(character)
+	# Remove queued events for dead character
+	var cleaned: Array = []
+	for e: Dictionary in _event_queue:
+		if e["character"] != character:
+			cleaned.append(e)
+	_event_queue = cleaned
 	queue_redraw()
 
 
-## Compute target positions from timeline tick data.
-## Lowest tick → 1.0 (right, about to act). Highest tick → 0.0 (left, just acted).
-## Uses a stable range (floored to max_speed) so positions shift uniformly each turn
-## instead of all markers jumping when the dynamic tick range changes.
-func _recalculate_targets() -> void:
-	var entries: Array[TimelineEntry] = BattleManager.get_timeline_entries()
-	if entries.is_empty():
-		_target_positions.clear()
-		return
-
-	# Find tick range and max speed among alive characters
-	var min_tick: int = 999999
-	var max_tick: int = 0
-	var max_speed: int = 1
-	for entry: TimelineEntry in entries:
-		if entry.character.is_alive():
-			min_tick = mini(min_tick, entry.current_tick)
-			max_tick = maxi(max_tick, entry.current_tick)
-			max_speed = maxi(max_speed, entry.character.get_effective_speed())
-
-	# Floor the range to max_speed so positions don't jump when the dynamic range shifts.
-	# This ensures each turn only shifts all markers by a small, uniform amount.
-	var tick_range: float = float(maxi(max_tick - min_tick, max_speed))
-
-	for entry: TimelineEntry in entries:
-		if not entry.character.is_alive():
-			_target_positions.erase(entry.character)
-			_display_positions.erase(entry.character)
-			continue
-
-		# Lowest tick = rightmost (1.0), highest tick = leftmost (0.0)
-		var t: float = 1.0 - clampf(float(entry.current_tick - min_tick) / tick_range, 0.0, 1.0)
-		_target_positions[entry.character] = t
-
-		# Initialize display position for newly added characters (e.g. summons)
-		if not _display_positions.has(entry.character):
-			_display_positions[entry.character] = t
-
-	# Remove characters no longer in the timeline
-	for ch: CharacterData in _display_positions.keys():
-		if not _target_positions.has(ch):
-			_display_positions.erase(ch)
-
-
 func _process(delta: float) -> void:
-	if _target_positions.is_empty():
+	if _positions.is_empty():
 		return
 
-	var any_moved: bool = false
-	for ch: CharacterData in _target_positions.keys():
-		if not _display_positions.has(ch):
-			_display_positions[ch] = _target_positions[ch]
-			any_moved = true
-			continue
+	match _phase:
+		Phase.RACING:
+			_process_racing(delta)
+		Phase.PAUSED:
+			_process_paused()
 
-		var current: float = _display_positions[ch]
-		var target: float = _target_positions[ch]
-		if absf(current - target) > 0.001:
-			# Speed proportional to character speed: lower speed stat → faster marker
-			var speed_factor: float = 100.0 / maxf(float(ch.get_effective_speed()), 1.0)
-			var move_speed: float = BASE_ANIM_SPEED * speed_factor
-			_display_positions[ch] = move_toward(current, target, move_speed * delta)
+
+func _process_racing(delta: float) -> void:
+	# Speed multiplier: fast-forward when many events are queued (enemy turn chains)
+	var speed_mult: float = 1.0
+	if _event_queue.size() > 2:
+		speed_mult = CATCH_UP_MULTIPLIER
+
+	# Advance all characters based on their speed
+	var any_moved: bool = false
+	for ch: CharacterData in _positions.keys():
+		var effective_speed: float = maxf(float(ch.get_effective_speed()), 1.0)
+		var advance: float = (RACE_SPEED / effective_speed) * speed_mult * delta
+		var old_pos: float = _positions[ch]
+		_positions[ch] = minf(old_pos + advance, 1.0)
+		if absf(_positions[ch] - old_pos) > 0.0001:
 			any_moved = true
-		else:
-			_display_positions[ch] = target
+
+	# Check if the next turn_started event's character has reached the finish line
+	if not _event_queue.is_empty() and _event_queue[0]["type"] == "start":
+		var ch: CharacterData = _event_queue[0]["character"]
+		if not _positions.has(ch):
+			_positions[ch] = 0.0
+		if _positions[ch] >= SNAP_THRESHOLD:
+			_event_queue.pop_front()
+			_positions[ch] = 1.0
+			_active_character = ch
+			_phase = Phase.PAUSED
+			any_moved = true
 
 	if any_moved:
+		queue_redraw()
+
+
+func _process_paused() -> void:
+	if _event_queue.is_empty():
+		return
+
+	var event: Dictionary = _event_queue[0]
+	if event["type"] == "end":
+		# Turn ended → reset character to far left, resume racing
+		_event_queue.pop_front()
+		var ch: CharacterData = event["character"]
+		if _positions.has(ch):
+			_positions[ch] = 0.0
+		_active_character = null
+		_phase = Phase.RACING
+		queue_redraw()
+	elif event["type"] == "start":
+		# Back-to-back turn_started (e.g. stunned character skipped immediately)
+		_event_queue.pop_front()
+		var ch: CharacterData = event["character"]
+		if not _positions.has(ch):
+			_positions[ch] = 0.0
+		_positions[ch] = 1.0
+		_active_character = ch
 		queue_redraw()
 
 
@@ -169,10 +176,10 @@ func _draw() -> void:
 	)
 
 	# Draw markers
-	for ch: CharacterData in _display_positions.keys():
+	for ch: CharacterData in _positions.keys():
 		if not ch.is_alive():
 			continue
-		var t: float = _display_positions[ch]
+		var t: float = _positions[ch]
 		var x: float = BAR_MARGIN + MARKER_RADIUS + t * (bar_width - MARKER_RADIUS * 2.0)
 		var center := Vector2(x, bar_y)
 
