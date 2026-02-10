@@ -11,7 +11,7 @@ const BAR_MARGIN: float = 20.0
 
 ## Race speed factor. Characters advance at RACE_SPEED / effective_speed per second.
 ## Lower speed stat (e.g. 70) = faster marker; higher speed stat (e.g. 100) = slower.
-const RACE_SPEED: float = 150.0
+const RACE_SPEED: float = 30.0
 
 ## When queued events pile up (e.g. multiple enemy turns), speed up the race.
 const CATCH_UP_MULTIPLIER: float = 5.0
