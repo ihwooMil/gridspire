@@ -80,21 +80,27 @@ func _on_character_died(character: CharacterData) -> void:
 
 ## Compute target positions from timeline tick data.
 ## Lowest tick → 1.0 (right, about to act). Highest tick → 0.0 (left, just acted).
+## Uses a stable range (floored to max_speed) so positions shift uniformly each turn
+## instead of all markers jumping when the dynamic tick range changes.
 func _recalculate_targets() -> void:
 	var entries: Array[TimelineEntry] = BattleManager.get_timeline_entries()
 	if entries.is_empty():
 		_target_positions.clear()
 		return
 
-	# Find tick range among alive characters
+	# Find tick range and max speed among alive characters
 	var min_tick: int = 999999
 	var max_tick: int = 0
+	var max_speed: int = 1
 	for entry: TimelineEntry in entries:
 		if entry.character.is_alive():
 			min_tick = mini(min_tick, entry.current_tick)
 			max_tick = maxi(max_tick, entry.current_tick)
+			max_speed = maxi(max_speed, entry.character.get_effective_speed())
 
-	var tick_range: int = maxi(max_tick - min_tick, 1)
+	# Floor the range to max_speed so positions don't jump when the dynamic range shifts.
+	# This ensures each turn only shifts all markers by a small, uniform amount.
+	var tick_range: float = float(maxi(max_tick - min_tick, max_speed))
 
 	for entry: TimelineEntry in entries:
 		if not entry.character.is_alive():
@@ -103,12 +109,12 @@ func _recalculate_targets() -> void:
 			continue
 
 		# Lowest tick = rightmost (1.0), highest tick = leftmost (0.0)
-		var t: float = 1.0 - float(entry.current_tick - min_tick) / float(tick_range)
-		_target_positions[entry.character] = clampf(t, 0.0, 1.0)
+		var t: float = 1.0 - clampf(float(entry.current_tick - min_tick) / tick_range, 0.0, 1.0)
+		_target_positions[entry.character] = t
 
 		# Initialize display position for newly added characters (e.g. summons)
 		if not _display_positions.has(entry.character):
-			_display_positions[entry.character] = _target_positions[entry.character]
+			_display_positions[entry.character] = t
 
 	# Remove characters no longer in the timeline
 	for ch: CharacterData in _display_positions.keys():
