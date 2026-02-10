@@ -475,11 +475,17 @@ func _draw_characters() -> void:
 		var sprite: Node2D = character_sprites[character]
 		var center: Vector2 = sprite.position
 		var half: Vector2 = ts * 0.4
-		var has_sprite_sheet: bool = sprite_sheets.has(character.character_name)
+		# Check if the sprite actually has a visual child (AnimatedSprite2D).
+		# sprite_sheets may have an entry but the texture could fail to load.
+		var has_visual_child: bool = false
+		for child: Node in sprite.get_children():
+			if child is AnimatedSprite2D:
+				has_visual_child = true
+				break
 		# Standing offset — characters appear above the tile center
 		var stand_offset := Vector2(0, -ts.y * 0.3)
 
-		if not has_sprite_sheet:
+		if not has_visual_child:
 			var draw_center: Vector2 = center + stand_offset
 			# Draw circle placeholder for characters without sprite sheets
 			var body_color: Color = _get_faction_color(character.faction)
@@ -505,7 +511,7 @@ func _draw_characters() -> void:
 			)
 
 		# Selection highlight for sprite-sheet characters
-		if has_sprite_sheet and character == selected_character:
+		if has_visual_child and character == selected_character:
 			draw_arc(center + stand_offset, minf(half.x, half.y) * 0.85, 0, TAU, 32, Color(1.0, 1.0, 0.3, 0.6), 2.0)
 
 		# HP bar at tile bottom area
