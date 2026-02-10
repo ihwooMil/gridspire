@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 1
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+dice_count = 1
+dice_sides = 8
+dice_bonus = 2
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 3
+value = 1
+duration = 3
+status_effect = 6
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "cleric_divine_light"
+card_name = "Divine Light"
+description = "Heal an ally for 1d8+2 and grant Regen 1 for 3 turns. Gain 1 Faith."
+energy_cost = 2
+range_min = 0
+range_max = 3
+target_type = 1
+effects = [SubResource("effect_1"), SubResource("effect_2")]
+rarity = 1
+element = "faith"
+element_count = 1

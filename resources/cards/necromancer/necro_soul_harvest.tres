@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 14
+value = 3
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("2")
+effect_type = 4
+value = 1
+duration = 1
+status_effect = 11
+area_radius = 0
+push_pull_distance = 0
+
+[sub_resource type="Resource" id="effect_3"]
+script = ExtResource("2")
+effect_type = 10
+value = 3
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "necro_soul_harvest"
+card_name = "Soul Harvest"
+description = "Sacrifice 3 HP. Unhealable for 1 turn. Draw 3 cards. Gain 2 Soul."
+energy_cost = 1
+range_min = 1
+range_max = 2
+target_type = 1
+effects = [SubResource("effect_1"), SubResource("effect_2"), SubResource("effect_3")]
+rarity = 1
+element = "soul"
+element_count = 2

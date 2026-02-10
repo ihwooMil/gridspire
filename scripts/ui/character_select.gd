@@ -29,6 +29,24 @@ const CHARACTERS: Array[Dictionary] = [
 		"move": 4,
 		"description": "A swift striker who excels at positioning and quick combos.",
 	},
+	{
+		"id": "cleric",
+		"name": "Cleric",
+		"hp": 50,
+		"speed": 90,
+		"energy": 3,
+		"move": 3,
+		"description": "A holy healer who builds faith to shield allies and smite foes.",
+	},
+	{
+		"id": "necromancer",
+		"name": "Necromancer",
+		"hp": 35,
+		"speed": 85,
+		"energy": 3,
+		"move": 2,
+		"description": "A dark caster who sacrifices allies to harvest souls for devastating power.",
+	},
 ]
 
 
@@ -72,7 +90,7 @@ func _build_ui() -> void:
 
 func _create_character_panel(data: Dictionary) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(240, 340)
+	panel.custom_minimum_size = Vector2(220, 340)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.14, 0.14, 0.2, 1.0)

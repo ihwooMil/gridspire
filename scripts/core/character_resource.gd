@@ -66,8 +66,12 @@ func take_damage(amount: int) -> int:
 	return remaining
 
 
-func heal(amount: int) -> void:
+func heal(amount: int) -> int:
+	if get_status_stacks(Enums.StatusEffect.UNHEALABLE) > 0:
+		return 0
+	var before: int = current_hp
 	current_hp = mini(current_hp + amount, max_hp)
+	return current_hp - before
 
 
 func get_status_stacks(effect: Enums.StatusEffect) -> int:

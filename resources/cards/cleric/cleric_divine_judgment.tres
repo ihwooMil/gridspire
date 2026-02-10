@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 0
+value = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 0
+dice_count = 1
+dice_sides = 6
+dice_bonus = 0
+scale_element = "faith"
+scale_per_stack = 2
+
+[resource]
+script = ExtResource("1")
+id = "cleric_divine_judgment"
+card_name = "Divine Judgment"
+description = "Deal 1d6 + 2 per Faith stack. Consume all Faith."
+energy_cost = 2
+range_min = 1
+range_max = 3
+target_type = 2
+effects = [SubResource("effect_1")]
+rarity = 1
+element = "faith"
+element_count = 0
+consumes_stacks = true

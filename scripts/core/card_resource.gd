@@ -53,6 +53,8 @@ func get_display_text() -> String:
 				text = "Deal shield as damage%s" % mult
 			Enums.CardEffectType.SUMMON:
 				text = "Summon %s" % effect.summon_id.replace("_", " ").capitalize()
+			Enums.CardEffectType.SACRIFICE:
+				text = "Sacrifice %s HP" % effect.get_dice_notation()
 			_:
 				text = description
 		if effect.stack_multiplier and effect.scale_element != "":

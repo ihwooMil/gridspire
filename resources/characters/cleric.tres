@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/character_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="2_cleric"]
+
+[resource]
+script = ExtResource("1")
+id = "cleric"
+character_name = "Cleric"
+faction = 0
+max_hp = 50
+current_hp = 50
+speed = 90
+energy_per_turn = 3
+move_range = 3
+grid_position = Vector2i(0, 0)
+starting_deck = Array[ExtResource("2_cleric")]([])

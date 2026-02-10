@@ -22,6 +22,9 @@ const STATUS_COLORS: Dictionary = {
 	Enums.StatusEffect.REGEN: Color(0.3, 1.0, 0.7),
 	Enums.StatusEffect.STUN: Color(1.0, 1.0, 0.2),
 	Enums.StatusEffect.ROOT: Color(0.6, 0.4, 0.2),
+	Enums.StatusEffect.BERSERK: Color(1.0, 0.2, 0.2),
+	Enums.StatusEffect.EVASION: Color(0.8, 0.8, 1.0),
+	Enums.StatusEffect.UNHEALABLE: Color(0.5, 0.0, 0.5),
 }
 
 const STATUS_NAMES: Dictionary = {
@@ -34,6 +37,9 @@ const STATUS_NAMES: Dictionary = {
 	Enums.StatusEffect.REGEN: "REGEN",
 	Enums.StatusEffect.STUN: "STUN",
 	Enums.StatusEffect.ROOT: "ROOT",
+	Enums.StatusEffect.BERSERK: "BSRK",
+	Enums.StatusEffect.EVASION: "EVA",
+	Enums.StatusEffect.UNHEALABLE: "CURSE",
 }
 
 

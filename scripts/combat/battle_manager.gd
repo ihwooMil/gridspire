@@ -389,8 +389,8 @@ func _apply_start_of_turn_effects(character: CharacterData) -> void:
 	# Regen: heal equal to stacks
 	var regen: int = character.get_status_stacks(Enums.StatusEffect.REGEN)
 	if regen > 0:
-		character.heal(regen)
-		character_healed.emit(character, regen)
+		var actual_regen: int = character.heal(regen)
+		character_healed.emit(character, actual_regen)
 
 
 func _apply_hazard_damage(character: CharacterData) -> void:

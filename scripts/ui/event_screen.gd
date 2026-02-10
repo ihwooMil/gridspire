@@ -9,6 +9,8 @@ const CLASS_DESCRIPTIONS: Dictionary = {
 	"warrior": "A stalwart defender who blocks damage and retaliates with shield strikes.",
 	"mage": "A spellcaster who stacks elemental power for devastating combos.",
 	"rogue": "A swift fighter who chains combo attacks for massive bonus damage.",
+	"cleric": "A holy healer who builds faith to shield allies and smite foes.",
+	"necromancer": "A dark caster who sacrifices allies to harvest souls for devastating power.",
 }
 
 

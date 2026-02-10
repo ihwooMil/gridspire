@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/card_resource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/core/card_effect_resource.gd" id="2"]
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("2")
+effect_type = 9
+value = 2
+duration = 3
+status_effect = 5
+area_radius = 1
+push_pull_distance = 0
+
+[resource]
+script = ExtResource("1")
+id = "necro_necrotic_wave"
+card_name = "Necrotic Wave"
+description = "Apply 2 Poison for 3 turns in an area (radius 1). Gain 1 Soul."
+energy_cost = 2
+range_min = 1
+range_max = 2
+target_type = 6
+effects = [SubResource("effect_1")]
+rarity = 1
+element = "soul"
+element_count = 1

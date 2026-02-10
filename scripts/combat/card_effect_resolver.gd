@@ -101,6 +101,9 @@ func apply_effect(effect: CardEffect, source: CharacterData, target: Variant) ->
 		Enums.CardEffectType.SUMMON:
 			_apply_summon(effect, source, target)
 
+		Enums.CardEffectType.SACRIFICE:
+			_apply_sacrifice(effect, target)
+
 
 ## Calculate damage with strength bonus, berserk bonus, and weakness reduction.
 func calculate_damage(base_value: int, source: CharacterData) -> int:
@@ -134,9 +137,7 @@ func _apply_damage(effect: CardEffect, source: CharacterData, target: Variant) -
 
 func _apply_heal(effect: CardEffect, target: Variant) -> void:
 	if target is CharacterData:
-		var hp_before: int = target.current_hp
-		target.heal(effect.roll())
-		var actual_heal: int = target.current_hp - hp_before
+		var actual_heal: int = target.heal(effect.roll())
 		healing_done.emit(target, actual_heal)
 
 
@@ -237,6 +238,15 @@ func _apply_summon(effect: CardEffect, source: CharacterData, target: Variant) -
 				break
 	source.active_summons.append(summon)
 	summon_created.emit(summon, source)
+
+
+func _apply_sacrifice(effect: CardEffect, target: Variant) -> void:
+	if target is CharacterData:
+		var amount: int = effect.roll()
+		var actual: int = mini(amount, target.current_hp - 1)
+		if actual > 0:
+			target.current_hp -= actual
+			damage_dealt.emit(target, actual)
 
 
 ## Calculate element scaling bonus.

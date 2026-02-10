@@ -120,6 +120,38 @@ func _create_character(id: String) -> void:
 				"rogue_sprint",
 				"rogue_throwing_knife",
 			])
+		"cleric":
+			character.character_name = "Cleric"
+			character.max_hp = 50
+			character.current_hp = 50
+			character.speed = 90
+			character.energy_per_turn = 3
+			character.move_range = 3
+			_load_deck(character, "res://resources/cards/cleric/", [
+				"cleric_holy_light", "cleric_holy_light",
+				"cleric_divine_shield", "cleric_divine_shield",
+				"cleric_smite", "cleric_smite",
+				"cleric_blessing",
+				"cleric_prayer",
+				"cleric_purifying_flame",
+				"cleric_radiance",
+			])
+		"necromancer":
+			character.character_name = "Necromancer"
+			character.max_hp = 35
+			character.current_hp = 35
+			character.speed = 85
+			character.energy_per_turn = 3
+			character.move_range = 2
+			_load_deck(character, "res://resources/cards/necromancer/", [
+				"necro_dark_bolt", "necro_dark_bolt",
+				"necro_bone_shield", "necro_bone_shield",
+				"necro_life_tap", "necro_life_tap",
+				"necro_soul_bolt",
+				"necro_shadow_grasp",
+				"necro_dark_pact",
+				"necro_hex",
+			])
 		_:
 			push_warning("Unknown character id: " + id)
 			return
@@ -175,7 +207,7 @@ func is_party_dead() -> bool:
 
 ## Get companion choices: character classes not yet in party.
 func get_companion_choices() -> Array[String]:
-	var all_classes: Array[String] = ["warrior", "mage", "rogue"]
+	var all_classes: Array[String] = ["warrior", "mage", "rogue", "cleric", "necromancer"]
 	var party_ids: Array[String] = []
 	for ch: CharacterData in party:
 		party_ids.append(ch.id)

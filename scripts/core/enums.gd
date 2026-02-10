@@ -18,6 +18,7 @@ enum CardEffectType {
 	SHIELD,
 	SHIELD_STRIKE,  ## Deal damage equal to current shield stacks
 	SUMMON,         ## Summon a creature onto the grid
+	SACRIFICE,      ## Direct HP loss ignoring shield/evasion, min 1 HP
 }
 
 ## Who or what a card can target.
@@ -61,6 +62,7 @@ enum StatusEffect {
 	ROOT,
 	BERSERK,   ## +2 damage per stack, cannot gain shield
 	EVASION,   ## 15% dodge per stack (max 75%), consumes 1 stack on dodge
+	UNHEALABLE,  ## Blocks all healing (card heal, REGEN) while stacks > 0
 }
 
 ## High-level game states.
