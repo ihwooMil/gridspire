@@ -90,6 +90,15 @@ var sprite_sheets: Dictionary = {
 			"fps": 1.0,
 		},
 	},
+	"Necromancer": {
+		"walk": {
+			"path": "res://res/necormancer.jpg",
+			"cols": 1,
+			"rows": 1,
+			"frame_count": 1,
+			"fps": 1.0,
+		},
+	},
 	"Slime": {
 		"walk": {
 			"path": "res://res/Monster.jpg",
