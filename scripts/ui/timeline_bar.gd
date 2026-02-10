@@ -1,72 +1,85 @@
-## Displays the turn order timeline as a horizontal bar at the top of the screen.
-## Markers race rightward at speeds proportional to their character's speed.
-## When a marker reaches the right end, that character's turn starts
-## and the marker resets to the left.
+## Displays the turn order as a horizontal race bar.
+## Character markers move left → right. The first to reach the right edge acts.
+## After acting, the marker resets to the far left and the race continues.
 class_name TimelineBar
 extends Control
 
 const BAR_HEIGHT: float = 40.0
 const MARKER_RADIUS: float = 16.0
 const BAR_MARGIN: float = 20.0
-## Linear movement speed: 0.22 means ~4.5 seconds to traverse the full bar (0→1).
-const MOVE_SPEED: float = 0.22
+## Base animation speed — actual speed is BASE_ANIM_SPEED * (100 / effective_speed).
+const BASE_ANIM_SPEED: float = 2.0
 
-## Smooth display positions: CharacterData -> float (0.0 = left, 1.0 = right)
+## Smooth display positions: CharacterData → float (0.0 = left, 1.0 = right)
 var _display_positions: Dictionary = {}
-## Target positions computed from tick data
+## Target positions computed from timeline tick data
 var _target_positions: Dictionary = {}
-## Track which character just acted (for reset-to-left animation)
-var _just_acted: CharacterData = null
-## When true, a turn is active — pause marker animation.
-var _turn_active: bool = false
+## Currently acting character (shown at finish line)
+var _active_character: CharacterData = null
 
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(200, 48)
+	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.timeline_updated.connect(_on_timeline_updated)
 	BattleManager.turn_started.connect(_on_turn_started)
 	BattleManager.turn_ended.connect(_on_turn_ended)
-	BattleManager.battle_started.connect(_on_battle_started)
+	BattleManager.character_died.connect(_on_character_died)
 	resized.connect(queue_redraw)
 
 
 func _exit_tree() -> void:
+	if BattleManager.battle_started.is_connected(_on_battle_started):
+		BattleManager.battle_started.disconnect(_on_battle_started)
 	if BattleManager.timeline_updated.is_connected(_on_timeline_updated):
 		BattleManager.timeline_updated.disconnect(_on_timeline_updated)
 	if BattleManager.turn_started.is_connected(_on_turn_started):
 		BattleManager.turn_started.disconnect(_on_turn_started)
 	if BattleManager.turn_ended.is_connected(_on_turn_ended):
 		BattleManager.turn_ended.disconnect(_on_turn_ended)
-	if BattleManager.battle_started.is_connected(_on_battle_started):
-		BattleManager.battle_started.disconnect(_on_battle_started)
+	if BattleManager.character_died.is_connected(_on_character_died):
+		BattleManager.character_died.disconnect(_on_character_died)
 
 
 func _on_battle_started() -> void:
 	_display_positions.clear()
 	_target_positions.clear()
-	_just_acted = null
+	_active_character = null
 	_recalculate_targets()
-	# Snap display positions to targets on battle start (no animation)
+	# Snap display to targets on battle start (no animation needed)
 	for ch: CharacterData in _target_positions.keys():
 		_display_positions[ch] = _target_positions[ch]
+	queue_redraw()
 
 
 func _on_timeline_updated() -> void:
 	_recalculate_targets()
+	queue_redraw()
 
 
 func _on_turn_started(character: CharacterData) -> void:
-	_just_acted = character
-	_turn_active = true
-	_recalculate_targets()
+	_active_character = character
+	# Snap active character to finish line (right edge)
+	_display_positions[character] = 1.0
+	_target_positions[character] = 1.0
+	queue_redraw()
 
 
-func _on_turn_ended(_character: CharacterData) -> void:
-	_turn_active = false
+func _on_turn_ended(character: CharacterData) -> void:
+	# Character finished acting → reset to far left
+	_display_positions[character] = 0.0
+	_active_character = null
+	queue_redraw()
 
 
-## Compute target bar positions from timeline tick data.
-## Right (1.0) = about to act (lowest tick). Left (0.0) = just acted (highest tick).
+func _on_character_died(character: CharacterData) -> void:
+	_display_positions.erase(character)
+	_target_positions.erase(character)
+	queue_redraw()
+
+
+## Compute target positions from timeline tick data.
+## Lowest tick → 1.0 (right, about to act). Highest tick → 0.0 (left, just acted).
 func _recalculate_targets() -> void:
 	var entries: Array[TimelineEntry] = BattleManager.get_timeline_entries()
 	if entries.is_empty():
@@ -81,11 +94,7 @@ func _recalculate_targets() -> void:
 			min_tick = mini(min_tick, entry.current_tick)
 			max_tick = maxi(max_tick, entry.current_tick)
 
-	var tick_range: int = max_tick - min_tick
-	if tick_range == 0:
-		tick_range = 1
-
-	var active_char: CharacterData = BattleManager.get_active_character()
+	var tick_range: int = maxi(max_tick - min_tick, 1)
 
 	for entry: TimelineEntry in entries:
 		if not entry.character.is_alive():
@@ -93,30 +102,15 @@ func _recalculate_targets() -> void:
 			_display_positions.erase(entry.character)
 			continue
 
-		# Invert: lowest tick → rightmost (1.0), highest tick → leftmost (0.0)
+		# Lowest tick = rightmost (1.0), highest tick = leftmost (0.0)
 		var t: float = 1.0 - float(entry.current_tick - min_tick) / float(tick_range)
-		t = clampf(t, 0.0, 1.0)
+		_target_positions[entry.character] = clampf(t, 0.0, 1.0)
 
-		# The active character just acted → their tick jumped up → target is now left
-		# But we want them at right edge first (they "crossed the finish line")
-		if entry.character == _just_acted and entry.character == active_char:
-			# Set display to 1.0 (right edge) immediately, target goes to left
-			if not _display_positions.has(entry.character):
-				_display_positions[entry.character] = 1.0
-			else:
-				# Flash to right then animate left
-				_display_positions[entry.character] = 1.0
-
-		_target_positions[entry.character] = t
-
-		# Initialize display position for new characters
+		# Initialize display position for newly added characters (e.g. summons)
 		if not _display_positions.has(entry.character):
-			_display_positions[entry.character] = t
+			_display_positions[entry.character] = _target_positions[entry.character]
 
-	# Clear acted flag after one frame of processing
-	_just_acted = null
-
-	# Remove dead characters
+	# Remove characters no longer in the timeline
 	for ch: CharacterData in _display_positions.keys():
 		if not _target_positions.has(ch):
 			_display_positions.erase(ch)
@@ -124,9 +118,6 @@ func _recalculate_targets() -> void:
 
 func _process(delta: float) -> void:
 	if _target_positions.is_empty():
-		return
-	# Pause animation while a turn is active
-	if _turn_active:
 		return
 
 	var any_moved: bool = false
@@ -138,8 +129,11 @@ func _process(delta: float) -> void:
 
 		var current: float = _display_positions[ch]
 		var target: float = _target_positions[ch]
-		if absf(current - target) > 0.002:
-			_display_positions[ch] = move_toward(current, target, MOVE_SPEED * delta)
+		if absf(current - target) > 0.001:
+			# Speed proportional to character speed: lower speed stat → faster marker
+			var speed_factor: float = 100.0 / maxf(float(ch.get_effective_speed()), 1.0)
+			var move_speed: float = BASE_ANIM_SPEED * speed_factor
+			_display_positions[ch] = move_toward(current, target, move_speed * delta)
 			any_moved = true
 		else:
 			_display_positions[ch] = target
@@ -149,23 +143,18 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# Ensure we have a valid width
-	if size.x <= 0.0:
-		var parent_size: Vector2 = get_parent_area_size()
-		if parent_size.x > 0:
-			size.x = parent_size.x - position.x
 	var bar_width: float = size.x - BAR_MARGIN * 2.0
 	if bar_width <= 0.0:
 		return
 
 	var bar_y: float = size.y / 2.0
 
-	# Draw bar background
+	# Bar background
 	var bar_rect := Rect2(BAR_MARGIN, bar_y - BAR_HEIGHT / 2.0, bar_width, BAR_HEIGHT)
 	draw_rect(bar_rect, Color(0.12, 0.12, 0.18, 0.85), true)
 	draw_rect(bar_rect, Color(0.3, 0.3, 0.4, 0.6), false, 1.0)
 
-	# Draw finish line at right edge
+	# Finish line at right edge
 	var finish_x: float = BAR_MARGIN + bar_width - 2.0
 	draw_line(
 		Vector2(finish_x, bar_y - BAR_HEIGHT / 2.0),
@@ -173,8 +162,7 @@ func _draw() -> void:
 		Color(1.0, 0.9, 0.2, 0.4), 2.0
 	)
 
-	var active_char: CharacterData = BattleManager.get_active_character()
-
+	# Draw markers
 	for ch: CharacterData in _display_positions.keys():
 		if not ch.is_alive():
 			continue
@@ -192,16 +180,13 @@ func _draw() -> void:
 		# Draw filled circle
 		draw_circle(center, MARKER_RADIUS, fill_color)
 
-		# Highlight current acting character with yellow border
-		var border_color: Color
-		if active_char and ch == active_char:
-			border_color = Color(1.0, 0.9, 0.2)
-			draw_arc(center, MARKER_RADIUS, 0.0, TAU, 32, border_color, 2.5)
+		# Border: yellow for active character, gray for others
+		if _active_character and ch == _active_character:
+			draw_arc(center, MARKER_RADIUS, 0.0, TAU, 32, Color(1.0, 0.9, 0.2), 2.5)
 		else:
-			border_color = Color(0.5, 0.5, 0.6, 0.6)
-			draw_arc(center, MARKER_RADIUS, 0.0, TAU, 32, border_color, 1.0)
+			draw_arc(center, MARKER_RADIUS, 0.0, TAU, 32, Color(0.5, 0.5, 0.6, 0.6), 1.0)
 
-		# Draw initial letter
+		# Character initial letter
 		var initial: String = ch.character_name.left(1).to_upper()
 		var font: Font = ThemeDB.fallback_font
 		var font_size: int = 14

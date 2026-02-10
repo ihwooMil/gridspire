@@ -64,7 +64,7 @@ func _build_ui() -> void:
 	# Vertical layout
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 40)
+	vbox.add_theme_constant_override("separation", 30)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(vbox)
 
@@ -76,21 +76,38 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
 	vbox.add_child(title)
 
+	# Scroll container for the character panels (ensures all are accessible)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	scroll.custom_minimum_size.y = 360
+	vbox.add_child(scroll)
+
 	# Character panels container
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 30)
-	hbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vbox.add_child(hbox)
+	hbox.add_theme_constant_override("separation", 16)
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(hbox)
+
+	# Calculate panel width to fit viewport
+	var viewport_width: float = get_viewport().get_visible_rect().size.x
+	if viewport_width <= 0:
+		viewport_width = 1280.0
+	var gap_total: float = 16.0 * (CHARACTERS.size() - 1)
+	var panel_width: float = floorf((viewport_width - 40.0 - gap_total) / float(CHARACTERS.size()))
+	panel_width = clampf(panel_width, 160.0, 240.0)
 
 	for data: Dictionary in CHARACTERS:
-		var panel := _create_character_panel(data)
+		var panel := _create_character_panel(data, panel_width)
 		hbox.add_child(panel)
 
 
-func _create_character_panel(data: Dictionary) -> PanelContainer:
+func _create_character_panel(data: Dictionary, panel_width: float) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(220, 340)
+	panel.custom_minimum_size = Vector2(panel_width, 340)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.14, 0.14, 0.2, 1.0)
@@ -108,7 +125,7 @@ func _create_character_panel(data: Dictionary) -> PanelContainer:
 	var name_label := Label.new()
 	name_label.text = data["name"]
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 24)
+	name_label.add_theme_font_size_override("font_size", 22)
 	name_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 	vbox.add_child(name_label)
 
@@ -141,7 +158,7 @@ func _create_character_panel(data: Dictionary) -> PanelContainer:
 	var desc := Label.new()
 	desc.text = data["description"]
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_font_size_override("font_size", 12)
 	desc.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(desc)
