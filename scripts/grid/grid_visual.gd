@@ -83,7 +83,7 @@ var sprite_sheets: Dictionary = {
 	},
 	"Cleric": {
 		"walk": {
-			"path": "res://res/cleric.png",
+			"path": "res://res/cleric.jpg",
 			"cols": 1,
 			"rows": 1,
 			"frame_count": 1,
