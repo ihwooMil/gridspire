@@ -37,6 +37,14 @@ func resolve_card(card: CardData, source: CharacterData, target: Variant) -> voi
 	# Record card tags for combo system
 	source.cards_played_this_turn.append(card)
 
+	# Consume specific amount of element stacks (element_cost)
+	if card.element_cost > 0 and card.element != "":
+		var elem: String = card.element
+		if source.element_stacks.has(elem):
+			source.element_stacks[elem] = maxi(source.element_stacks[elem] - card.element_cost, 0)
+			if source.element_stacks[elem] <= 0:
+				source.element_stacks.erase(elem)
+
 	# Consume all element stacks if card has consumes_stacks
 	if card.consumes_stacks:
 		source.element_stacks.clear()
@@ -107,7 +115,16 @@ func calculate_damage(base_value: int, source: CharacterData) -> int:
 
 func _apply_damage(effect: CardEffect, source: CharacterData, target: Variant) -> void:
 	if target is CharacterData:
-		var base: int = effect.roll() + _get_scaling_bonus(effect, source) + _get_combo_bonus(effect, source)
+		var base: int
+		if effect.stack_multiplier and effect.scale_element != "":
+			var stacks: int
+			if effect.scale_element == "all":
+				stacks = source.get_total_element_stacks()
+			else:
+				stacks = source.element_stacks.get(effect.scale_element, 0)
+			base = stacks * effect.roll()
+		else:
+			base = effect.roll() + _get_scaling_bonus(effect, source) + _get_combo_bonus(effect, source)
 		var dmg: int = calculate_damage(base, source)
 		var actual: int = target.take_damage(dmg)
 		damage_dealt.emit(target, actual)
@@ -157,9 +174,19 @@ func _apply_draw(effect: CardEffect, source: CharacterData) -> void:
 func _apply_area_damage(effect: CardEffect, source: CharacterData, target: Variant) -> void:
 	if target is Vector2i:
 		var targets: Array[CharacterData] = GridManager.get_characters_in_radius(target, effect.area_radius)
-		var bonus: int = _get_scaling_bonus(effect, source) + _get_combo_bonus(effect, source)
 		for t: CharacterData in targets:
-			var dmg: int = calculate_damage(effect.roll() + bonus, source)
+			var base: int
+			if effect.stack_multiplier and effect.scale_element != "":
+				var stacks: int
+				if effect.scale_element == "all":
+					stacks = source.get_total_element_stacks()
+				else:
+					stacks = source.element_stacks.get(effect.scale_element, 0)
+				base = stacks * effect.roll()
+			else:
+				var bonus: int = _get_scaling_bonus(effect, source) + _get_combo_bonus(effect, source)
+				base = effect.roll() + bonus
+			var dmg: int = calculate_damage(base, source)
 			var actual: int = t.take_damage(dmg)
 			damage_dealt.emit(t, actual)
 			if not t.is_alive():

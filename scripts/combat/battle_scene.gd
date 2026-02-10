@@ -187,8 +187,8 @@ func _load_enemy_deck(enemy: CharacterData) -> void:
 			# Legacy fallback for old monsters (orc, skeleton_mage)
 			if "mage" in enemy.id or "skeleton" in enemy.id:
 				_load_deck(enemy, "res://resources/cards/mage/", [
-					"mage_arcane_bolt", "mage_arcane_bolt", "mage_arcane_bolt",
-					"mage_frost_bolt", "mage_fireball",
+					"mage_fire_bolt", "mage_fire_bolt", "mage_fire_bolt",
+					"mage_dark_arrow", "mage_magic_bullet",
 				])
 			else:
 				_load_deck(enemy, "res://resources/cards/warrior/", [
@@ -247,10 +247,12 @@ func _apply_difficulty_modifiers(enemy: CharacterData) -> void:
 
 func _on_character_damaged(character: CharacterData, amount: int) -> void:
 	_spawn_damage_popup(character, amount, true)
+	grid_container.flash_character(character, Color(1.0, 0.3, 0.3), 0.3)
 
 
 func _on_character_healed(character: CharacterData, amount: int) -> void:
 	_spawn_damage_popup(character, amount, false)
+	grid_container.flash_character(character, Color(0.3, 1.0, 0.3), 0.3)
 
 
 func _on_character_died(character: CharacterData) -> void:

@@ -5,24 +5,29 @@
 
 [sub_resource type="Resource" id="effect_1"]
 script = ExtResource("2")
-effect_type = 10
-value = 2
+effect_type = 0
+value = 0
 duration = 0
 status_effect = 0
 area_radius = 0
-push_pull_distance = 0
+push_pull_distance = 1
+dice_count = 2
+dice_sides = 6
+dice_bonus = 0
+scale_element = "energy"
+stack_multiplier = true
 
 [resource]
 script = ExtResource("1")
-id = "mage_elemental_mastery"
-card_name = "Elemental Mastery"
-description = "Add 3 stacks of each element. Draw 2 cards. Exhaust."
-energy_cost = 3
-range_min = 0
-range_max = 0
-target_type = 0
+id = "mage_magic_bullet"
+card_name = "Magic Bullet"
+description = "Deal [energy] x 2d6 damage. Consume all Energy."
+energy_cost = 1
+range_min = 1
+range_max = 4
+target_type = 2
 effects = [SubResource("effect_1")]
 rarity = 2
-exhaust_on_play = true
-element = "all"
-element_count = 3
+element = "energy"
+element_count = 0
+consumes_stacks = true

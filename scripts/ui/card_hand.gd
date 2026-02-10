@@ -29,6 +29,15 @@ func _ready() -> void:
 	BattleManager.battle_ended.connect(_on_battle_ended)
 
 
+func _exit_tree() -> void:
+	if BattleManager.turn_started.is_connected(_on_turn_started):
+		BattleManager.turn_started.disconnect(_on_turn_started)
+	if BattleManager.turn_ended.is_connected(_on_turn_ended):
+		BattleManager.turn_ended.disconnect(_on_turn_ended)
+	if BattleManager.battle_ended.is_connected(_on_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_battle_ended)
+
+
 func _on_turn_started(character: CharacterData) -> void:
 	if character.faction != Enums.Faction.PLAYER:
 		clear_hand()
@@ -174,6 +183,14 @@ func _on_card_drag_moved(card: CardData, screen_pos: Vector2) -> void:
 
 func update_playability() -> void:
 	var energy: int = BattleManager.current_energy
+	var active: CharacterData = BattleManager.get_active_character()
 	for card_ui: CardUI in _card_uis:
 		if card_ui.card_data:
-			card_ui.set_playable(card_ui.card_data.energy_cost <= energy)
+			var card: CardData = card_ui.card_data
+			var playable: bool = card.energy_cost <= energy
+			# Check element_cost requirement
+			if playable and card.element_cost > 0 and card.element != "" and active:
+				var stacks: int = active.element_stacks.get(card.element, 0)
+				if stacks < card.element_cost:
+					playable = false
+			card_ui.set_playable(playable)

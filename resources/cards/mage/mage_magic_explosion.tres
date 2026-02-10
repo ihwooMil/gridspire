@@ -5,21 +5,29 @@
 
 [sub_resource type="Resource" id="effect_1"]
 script = ExtResource("2")
-effect_type = 8
-value = 5
+effect_type = 7
+value = 0
 duration = 0
-status_effect = 6
+status_effect = 0
 area_radius = 2
-push_pull_distance = 0
+push_pull_distance = 1
+dice_count = 2
+dice_sides = 4
+dice_bonus = 0
+scale_element = "energy"
+stack_multiplier = true
 
 [resource]
 script = ExtResource("1")
-id = "mage_mass_heal"
-card_name = "Mass Heal"
-description = "Heal all allies in a 2-tile radius for 5 HP."
+id = "mage_magic_explosion"
+card_name = "Magic Explosion"
+description = "Deal [energy] x 2d4 damage in area. Consume all Energy."
 energy_cost = 2
-range_min = 0
+range_min = 1
 range_max = 3
 target_type = 6
 effects = [SubResource("effect_1")]
-rarity = 1
+rarity = 2
+element = "energy"
+element_count = 0
+consumes_stacks = true

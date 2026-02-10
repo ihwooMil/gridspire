@@ -27,6 +27,7 @@ const COLOR_PATH_PREVIEW := Color(0.3, 0.7, 1.0, 0.5)
 const COLOR_SELECTED_TILE := Color(1.0, 0.9, 0.3, 0.4)
 const COLOR_HOVER := Color(1.0, 1.0, 1.0, 0.15)
 const COLOR_AOE_PREVIEW := Color(1.0, 0.5, 0.1, 0.35)
+const COLOR_ALLY_RANGE := Color(0.2, 0.7, 0.3, 0.25)
 
 ## Character colors
 const COLOR_PLAYER := Color(0.3, 0.7, 1.0)
@@ -82,6 +83,7 @@ var _targeting: bool = false
 var _targeting_card: CardData = null
 var _targeting_source: CharacterData = null
 var _aoe_preview_tiles: Array[Vector2i] = []
+var _range_color: Color = COLOR_ATTACK_RANGE
 
 ## Movement animation state
 var _animating: bool = false
@@ -370,10 +372,10 @@ func _draw_highlights() -> void:
 			var rect := Rect2(Vector2(pos) * ts, ts)
 			draw_rect(rect, COLOR_MOVE_RANGE, true)
 
-	# Attack range (red)
+	# Attack/targeting range (color depends on card type)
 	for pos: Vector2i in highlighted_attack_tiles:
 		var rect := Rect2(Vector2(pos) * ts, ts)
-		draw_rect(rect, COLOR_ATTACK_RANGE, true)
+		draw_rect(rect, _range_color, true)
 
 	# Path preview
 	for pos: Vector2i in path_preview_tiles:
@@ -639,6 +641,14 @@ func update_drag_hover(screen_pos: Vector2) -> void:
 	var grid_pos: Vector2i = GridManager.world_to_grid(local_pos)
 	if grid_pos != hovered_tile:
 		hovered_tile = grid_pos
+		# AOE preview during card drag (targeting mode is already active)
+		if _targeting and _targeting_card and GridManager.grid.has(grid_pos):
+			if grid_pos in highlighted_attack_tiles:
+				_aoe_preview_tiles = _get_aoe_tiles(grid_pos, _targeting_card)
+			else:
+				_aoe_preview_tiles = []
+		else:
+			_aoe_preview_tiles = []
 		queue_redraw()
 
 
@@ -648,6 +658,12 @@ func enter_targeting_mode(card: CardData, source: CharacterData) -> void:
 	_targeting = true
 	_targeting_card = card
 	_targeting_source = source
+	# Set range color based on card target type
+	match card.target_type:
+		Enums.TargetType.SINGLE_ALLY, Enums.TargetType.ALL_ALLIES:
+			_range_color = COLOR_ALLY_RANGE
+		_:
+			_range_color = COLOR_ATTACK_RANGE
 	# Show attack range from source position
 	highlighted_attack_tiles = GridManager.get_tiles_in_range(
 		source.grid_position, card.range_min, card.range_max
@@ -662,6 +678,7 @@ func exit_targeting_mode() -> void:
 	_targeting_source = null
 	highlighted_attack_tiles = []
 	_aoe_preview_tiles = []
+	_range_color = COLOR_ATTACK_RANGE
 	targeting_cancelled.emit()
 	queue_redraw()
 
@@ -703,6 +720,16 @@ func _handle_targeting_click(grid_pos: Vector2i, tile: GridTile) -> void:
 	else:
 		# Invalid target, cancel
 		exit_targeting_mode()
+
+
+## Flash a character's sprite with a color tint for visual feedback.
+func flash_character(character: CharacterData, flash_color: Color, duration: float = 0.3) -> void:
+	if not character_sprites.has(character):
+		return
+	var sprite: Node2D = character_sprites[character]
+	var tween: Tween = create_tween()
+	sprite.modulate = flash_color
+	tween.tween_property(sprite, "modulate", Color.WHITE, duration)
 
 
 ## Get the tiles that would be affected by a card's area effect at the given position.

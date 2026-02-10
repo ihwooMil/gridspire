@@ -14,29 +14,12 @@ var _node_buttons: Array[MapNodeButton] = []
 const MAP_MARGIN: float = 100.0
 
 
-const SCROLL_STEP: int = 80
-
-
 func _ready() -> void:
 	_build_map()
 	_update_top_bar()
 	# Scroll to left (player starts on the left)
 	await get_tree().process_frame
 	scroll_container.scroll_horizontal = 0
-
-
-func _input(event: InputEvent) -> void:
-	if not visible:
-		return
-	if event is InputEventMouseButton:
-		var mb: InputEventMouseButton = event
-		if mb.pressed:
-			if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_LEFT:
-				scroll_container.scroll_horizontal -= SCROLL_STEP
-				get_viewport().set_input_as_handled()
-			elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN or mb.button_index == MOUSE_BUTTON_WHEEL_RIGHT:
-				scroll_container.scroll_horizontal += SCROLL_STEP
-				get_viewport().set_input_as_handled()
 
 
 func _build_map() -> void:

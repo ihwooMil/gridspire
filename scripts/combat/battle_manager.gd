@@ -194,6 +194,12 @@ func play_card(card: CardData, source: CharacterData, target: Variant) -> bool:
 	if card.requires_berserk and source.get_status_stacks(Enums.StatusEffect.BERSERK) <= 0:
 		return false
 
+	# Check element_cost
+	if card.element_cost > 0 and card.element != "":
+		var stacks: int = source.element_stacks.get(card.element, 0)
+		if stacks < card.element_cost:
+			return false
+
 	current_energy -= card.energy_cost
 	hand.erase(card)
 
@@ -293,6 +299,10 @@ func can_play_card(card: CardData, source: CharacterData, target: Variant) -> bo
 		return false
 	if card.requires_berserk and source.get_status_stacks(Enums.StatusEffect.BERSERK) <= 0:
 		return false
+	if card.element_cost > 0 and card.element != "":
+		var stacks: int = source.element_stacks.get(card.element, 0)
+		if stacks < card.element_cost:
+			return false
 	return _is_target_in_range(card, source, target)
 
 

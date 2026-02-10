@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/overworld_map.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/map_line_drawer.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/ui/map_scroll_container.gd" id="3"]
 
 [node name="OverworldMap" type="Control"]
 layout_mode = 3
@@ -62,6 +63,7 @@ grow_horizontal = 2
 grow_vertical = 2
 horizontal_scroll_mode = 2
 vertical_scroll_mode = 0
+script = ExtResource("3")
 
 [node name="MapContent" type="Control" parent="ScrollContainer"]
 layout_mode = 2

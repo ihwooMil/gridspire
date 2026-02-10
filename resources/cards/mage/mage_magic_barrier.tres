@@ -5,21 +5,26 @@
 
 [sub_resource type="Resource" id="effect_1"]
 script = ExtResource("2")
-effect_type = 9
+effect_type = 11
 value = 0
-duration = 2
-status_effect = 3
-area_radius = 1
-push_pull_distance = 0
+duration = 0
+status_effect = 0
+area_radius = 0
+push_pull_distance = 1
+dice_count = 1
+dice_sides = 6
+dice_bonus = 0
 
 [resource]
 script = ExtResource("1")
-id = "mage_ice_wall"
-card_name = "Ice Wall"
-description = "Apply Slow for 2 turns to all enemies in a 1-tile radius area."
-energy_cost = 2
-range_min = 1
-range_max = 3
-target_type = 6
+id = "mage_magic_barrier"
+card_name = "Magic Barrier"
+description = "Gain 1d6 shield. Gain 1 Energy."
+energy_cost = 1
+range_min = 0
+range_max = 0
+target_type = 0
 effects = [SubResource("effect_1")]
-rarity = 1
+rarity = 0
+element = "energy"
+element_count = 1

@@ -17,12 +17,15 @@ var _display_positions: Dictionary = {}
 var _target_positions: Dictionary = {}
 ## Track which character just acted (for reset-to-left animation)
 var _just_acted: CharacterData = null
+## When true, a turn is active — pause marker animation.
+var _turn_active: bool = false
 
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(200, 48)
 	BattleManager.timeline_updated.connect(_on_timeline_updated)
 	BattleManager.turn_started.connect(_on_turn_started)
+	BattleManager.turn_ended.connect(_on_turn_ended)
 	BattleManager.battle_started.connect(_on_battle_started)
 	resized.connect(queue_redraw)
 
@@ -32,6 +35,8 @@ func _exit_tree() -> void:
 		BattleManager.timeline_updated.disconnect(_on_timeline_updated)
 	if BattleManager.turn_started.is_connected(_on_turn_started):
 		BattleManager.turn_started.disconnect(_on_turn_started)
+	if BattleManager.turn_ended.is_connected(_on_turn_ended):
+		BattleManager.turn_ended.disconnect(_on_turn_ended)
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
 
@@ -52,7 +57,12 @@ func _on_timeline_updated() -> void:
 
 func _on_turn_started(character: CharacterData) -> void:
 	_just_acted = character
+	_turn_active = true
 	_recalculate_targets()
+
+
+func _on_turn_ended(_character: CharacterData) -> void:
+	_turn_active = false
 
 
 ## Compute target bar positions from timeline tick data.
@@ -114,6 +124,9 @@ func _recalculate_targets() -> void:
 
 func _process(delta: float) -> void:
 	if _target_positions.is_empty():
+		return
+	# Pause animation while a turn is active
+	if _turn_active:
 		return
 
 	var any_moved: bool = false

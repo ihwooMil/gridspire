@@ -18,7 +18,7 @@ const CHARACTERS: Array[Dictionary] = [
 		"speed": 80,
 		"energy": 3,
 		"move": 2,
-		"description": "A glass cannon wielding powerful spells and area attacks.",
+		"description": "An energy mage who builds stacks to unleash devastating spells.",
 	},
 	{
 		"id": "rogue",

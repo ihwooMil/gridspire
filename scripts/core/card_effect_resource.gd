@@ -29,6 +29,8 @@ extends Resource
 @export var combo_bonus: int = 0
 ## If true, effect only activates when combo condition is met
 @export var combo_only: bool = false
+## If true, multiply dice roll by element stacks instead of additive scaling
+@export var stack_multiplier: bool = false
 
 
 ## Returns true if this effect uses dice instead of a flat value.

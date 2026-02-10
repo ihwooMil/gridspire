@@ -6,25 +6,26 @@
 [sub_resource type="Resource" id="effect_1"]
 script = ExtResource("2")
 effect_type = 0
-value = 9
+value = 0
 duration = 0
 status_effect = 0
 area_radius = 0
-push_pull_distance = 0
+push_pull_distance = 1
 dice_count = 2
-dice_sides = 6
+dice_sides = 4
 dice_bonus = 0
 
 [resource]
 script = ExtResource("1")
-id = "mage_searing_ray"
-card_name = "Searing Ray"
-description = "Deal 9 damage to an enemy at long range."
-energy_cost = 2
-range_min = 2
-range_max = 5
+id = "mage_dark_arrow"
+card_name = "Dark Arrow"
+description = "Deal 2d4 damage. Costs 1 Energy stack."
+energy_cost = 1
+range_min = 1
+range_max = 3
 target_type = 2
 effects = [SubResource("effect_1")]
 rarity = 1
-element = "fire"
-element_count = 1
+element = "energy"
+element_count = 0
+element_cost = 1

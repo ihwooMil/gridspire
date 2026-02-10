@@ -27,6 +27,8 @@ extends Resource
 @export var consumes_stacks: bool = false
 ## If true, can only be played while BERSERK is active
 @export var requires_berserk: bool = false
+## Consume this many element stacks when played (0 = none)
+@export var element_cost: int = 0
 
 
 func get_display_text() -> String:
@@ -53,11 +55,19 @@ func get_display_text() -> String:
 				text = "Summon %s" % effect.summon_id.replace("_", " ").capitalize()
 			_:
 				text = description
-		if effect.scale_element != "" and effect.scale_per_stack > 0:
+		if effect.stack_multiplier and effect.scale_element != "":
+			text = text.replace("Deal %s" % effect.get_dice_notation(), "Deal [%s] x %s" % [effect.scale_element, effect.get_dice_notation()])
+		elif effect.scale_element != "" and effect.scale_per_stack > 0:
 			text += " (+%d/%s stack)" % [effect.scale_per_stack, effect.scale_element]
 		if effect.combo_tag != "" and effect.combo_bonus > 0:
 			text += " [Combo: %s +%d]" % [effect.combo_tag, effect.combo_bonus]
 		parts.append(text)
+	if element != "" and element_count > 0:
+		parts.append("+%d %s" % [element_count, element.capitalize()])
+	if element_cost > 0:
+		parts.append("-%d %s" % [element_cost, element.capitalize()])
+	if consumes_stacks:
+		parts.append("Consume all %s" % element.capitalize())
 	if exhaust_on_play:
 		parts.append("Exhaust")
 	if requires_berserk:

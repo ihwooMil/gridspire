@@ -96,14 +96,12 @@ func _create_character(id: String) -> void:
 			character.energy_per_turn = 3
 			character.move_range = 2
 			_load_deck(character, "res://resources/cards/mage/", [
-				"mage_arcane_bolt", "mage_arcane_bolt",
-				"mage_mana_shield", "mage_mana_shield",
-				"mage_fireball",
-				"mage_frost_bolt",
-				"mage_healing_light",
-				"mage_arcane_intellect",
-				"mage_spark",
-				"mage_chain_lightning",
+				"mage_fire_bolt", "mage_fire_bolt", "mage_fire_bolt",
+				"mage_magic_intellect", "mage_magic_intellect",
+				"mage_magic_barrier", "mage_magic_barrier",
+				"mage_dark_arrow",
+				"mage_magic_bullet",
+				"mage_magic_explosion",
 			])
 		"rogue":
 			character.character_name = "Rogue"
