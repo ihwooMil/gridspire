@@ -39,8 +39,9 @@ scripts/
   grid/       # 그리드 시스템
   ui/         # UI 스크립트
   utils/      # 유틸리티
+res/          # 캐릭터/몬스터 이미지 (스프라이트 시트 포함)
 resources/
-  cards/      # 카드 .tres (warrior/, mage/, rogue/, enemies/, summons/)
+  cards/      # 카드 .tres (warrior/, mage/, rogue/, cleric/, necromancer/, enemies/, summons/)
   characters/ # 캐릭터 .tres
   maps/       # 맵 데이터
   upgrades/   # 스텟 업그레이드 .tres
@@ -90,18 +91,41 @@ docs/         # 기획서, 트러블슈팅 문서
 - **Rogue (콤보 체인)**: `tags` (PackedStringArray)로 태그 부여
   - `combo_tag`, `combo_bonus`로 선행 태그 확인 시 보너스 데미지
   - `combo_only`로 콤보 조건 미충족 시 효과 스킵
+- **Cleric (신앙 스택)**: `element = "faith"`로 신앙 스택 축적
+  - 대부분의 카드가 +1 faith 생성, `scale_element`/`stack_multiplier`로 스케일링
+  - `consumes_stacks`로 스택 소모 폭발 (Divine Judgment, Divine Storm)
+  - 힐/실드/버프 서포트 + 신성 데미지
+- **Necromancer (소울 스택)**: `element = "soul"`로 소울 스택 축적
+  - SACRIFICE 효과로 아군 HP 직접 소모 → 소울 스택 획득
+  - UNHEALABLE 디버프로 힐 차단 (Cleric 힐 포함)
+  - `range_min = 1`로 자기 자신 희생 불가 (솔로 시 희생 카드 사용 불가)
 
-## 타임라인 바 애니메이션
-- `_process(delta)` + `lerpf()` 기반 연속 애니메이션
-- 우측(1.0) = 곧 행동 (낮은 tick), 좌측(0.0) = 방금 행동 (높은 tick)
-- 행동 시 마커가 우측 끝(결승선)에 도달 → 좌측으로 리셋
-- `_display_positions` (현재 표시), `_target_positions` (목표) 분리
+## 타임라인 바 (리얼타임 레이스)
+- **이벤트 큐 기반**: `turn_started`/`turn_ended` 시그널을 큐에 저장, 시각적으로 순서대로 재생
+- **RACING 상태**: 모든 마커가 `RACE_SPEED / effective_speed * delta` 만큼 매 프레임 좌→우 전진
+  - 낮은 speed 값 = 빠른 마커 (speed 70 > speed 100)
+  - 다음 행동 캐릭터가 0.95 도달 시 1.0으로 스냅 → PAUSED 전환
+- **PAUSED 상태**: 턴 진행 중 레이스 멈춤, `turn_ended` 이벤트 대기
+  - 턴 종료 시 해당 캐릭터 0.0으로 리셋 → RACING 재개
+- **Catch-up**: 이벤트 큐 > 2개 시 5배속으로 따라잡기 (적 턴 연쇄)
+- `RACE_SPEED = 30.0` (전장 이동 속도와 유사한 페이스)
 
 ## 그리드 비주얼 하이라이트
 - **이동 범위** (파란색): `select_character()` 시 `BattleManager.has_moved_this_turn` 및 ROOT 상태 확인
 - **공격 범위** (빨간색): 카드 타겟팅 진입 시 표시
 - **AOE 미리보기** (주황색): AREA 카드 타겟팅 중 호버 시 `effect.area_radius` 기반 영향 범위 표시
 - **경로 미리보기** (하늘색): 이동 가능 타일 호버 시 BFS 경로 표시
+
+## 캐릭터 스프라이트 시스템
+- `grid_visual.gd`의 `sprite_sheets` 딕셔너리로 캐릭터별 이미지 매핑
+  - 키: `character_name` (예: "Warrior", "Slime")
+  - 값: `{ "walk": { "path", "cols", "rows", "frame_count", "fps" } }` 형태
+- **스프라이트 시트**: cols/rows > 1 (예: Mage - 5x5 grid, 25 frames)
+- **정적 이미지**: cols=1, rows=1, frame_count=1 (예: Warrior, Rogue)
+- **Fallback**: 텍스처 로드 실패 또는 sprite_sheets 미등록 시 팩션 색상 원형 + 이니셜
+  - `AnimatedSprite2D` 자식 노드 유무로 판단 (sprite_sheets 등록 여부가 아님)
+- 이미지 파일은 `res/` 폴더에 위치, `.import` 파일은 `.gitignore`로 제외 (CI에서 자동 생성)
+- 새 이미지 추가 시: `res/`에 파일 추가 → `sprite_sheets`에 엔트리 추가 → 로컬 테스트 시 Godot 에디터 한번 열어야 임포트됨
 
 ## 오버월드 맵
 - `ScrollContainer`로 가로 스크롤 (horizontal_scroll_mode = ALWAYS)
